@@ -77,7 +77,7 @@ python -m allennlp.run predict "PATH\TO\scicite-pretrained.tar.gz" "PATH\TO\data
 
 You can see the prediction results in the command line.
 
-![](docs\sample-prediction.png)
+![](docs/sample-prediction.png)
 
 The sentence "A series of genes (termed exo) involved in succino glycan biosynthesis have been cloned and sequenced (10, 11, 12, 67, 68, 103, 113)." is classified as `background`.
 
@@ -155,7 +155,7 @@ python scripts/train_local.py train_multitask_2 "PATH\TO\G20_SciCite\experiment_
 
 This outputs the current F1 scores into the console and also outputs into the serialization folder.
 
-![](docs\training-log.png)
+![](docs/training-log.png)
 
 If you stop the training halfway, you can actually recover the training from the last checkpoint by using the `--recover` flag.
 
