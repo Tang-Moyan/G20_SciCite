@@ -6,7 +6,7 @@ This repository contains datasets and code for classifying citation intents in a
 For details on the model and data refer to our NAACL 2019 paper:
 ["Structural Scaffolds for Citation Intent Classification in Scientific Publications"](https://arxiv.org/pdf/1904.01608.pdf).
 
-### Setup Tutorial
+## Setup Tutorial
 
 To use this library, you must use Python 3.6.X. Also ensure that you have pip installed, as we will be using pip to install our packages into the virtual environment.
 
@@ -33,7 +33,7 @@ pip install -r requirements.in -c constraints.txt
 
 This will install all the required packages for the project.
 
-Install the following patches to fix stray errors:
+Next, install the following important patches to fix stray errors:
 ```
 pip install greenlet==0.4.16 overrides==3.1.0 jsonnetbin
 ```
@@ -42,7 +42,7 @@ Now, download the pretrained SciCite model from the following link:
 
 [`SciCite`](https://s3-us-west-2.amazonaws.com/ai2-s2-research/scicite/models/scicite.tar.gz)
 
-I named my tar.gz file `scicite-pretrained.tar.gz` and put it in under a folder called `scicite`. Please remember the path to this file.
+I named my `tar.gz` file `scicite-pretrained.tar.gz` and put it in under a folder called `scicite`. Please remember the path to this file.
 
 For me, my path is:
 ```bash
@@ -81,7 +81,7 @@ You can see the prediction results in the command line.
 
 The sentence "A series of genes (termed exo) involved in succino glycan biosynthesis have been cloned and sequenced (10, 11, 12, 67, 68, 103, 113)." is classified as `background`.
 
-From this, we can see that `allennlp.run predict` is the final command to test the prediction.
+From this, we can see that `allennlp.run predict` is the final command used to test the classifier model.
 
 ## Training
 
