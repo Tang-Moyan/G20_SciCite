@@ -130,7 +130,7 @@ Next, ensure your paths to your training data and scaffolds are set up correctly
 "test_data_path": "PATH\\TO\\data\\test.jsonl",
 ```
 
-Finally, if you **do not have a GPU**, you can set the `cuda_device` to `-1` in the config file. Of course, if you do have a GPU, it would be preferable to use it.
+Finally, if you **do not have a GPU**, you must set the `cuda_device` to `-1` in the config file. Of course, if you do have a GPU, it would be preferable to use it.
 ```json
 "trainer": {
   "num_epochs": 10,
@@ -146,6 +146,8 @@ Finally, if you **do not have a GPU**, you can set the `cuda_device` to `-1` in 
 ```
 
 Finally, the command needs a folder to output the training logs and results into. Create a new folder in the root of the project called `serialization`.
+
+![](docs\serialization-folder.png)
 
 Now, we can run the training command.
 
