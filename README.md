@@ -147,7 +147,7 @@ Finally, if you **do not have a GPU**, you must set the `cuda_device` to `-1` in
 
 Finally, the command needs a folder to output the training logs and results into. Create a new folder in the root of the project called `serialization`.
 
-![](docs\serialization-folder.png)
+![](docs/serialization-folder.png)
 
 Now, we can run the training command.
 
