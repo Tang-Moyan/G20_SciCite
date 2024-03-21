@@ -6,6 +6,168 @@ This repository contains datasets and code for classifying citation intents in a
 For details on the model and data refer to our NAACL 2019 paper:
 ["Structural Scaffolds for Citation Intent Classification in Scientific Publications"](https://arxiv.org/pdf/1904.01608.pdf).
 
+## Setup Tutorial
+
+To use this library, you must use Python 3.6.X. Also ensure that you have pip installed, as we will be using pip to install our packages into the virtual environment.
+
+Create a virtual environment, either with Anaconda or with pip, with Python 3.6.X. In this tutorial, I am using Python 3.6.13.
+
+![](docs/create-new-environment.png)
+
+Activate the virtual environment, either with Anaconda navigator or with the command line.
+
+![](docs/activate-environment.png)
+
+Install `allennlp==0.8` into the virtual environment. It is important to use this version of AllenNLP, as the code in this repository is not compatible with the latest version of AllenNLP.
+
+```bash
+pip install allennlp==0.8 --default-timeout=100
+```
+
+`--default-timeout=100` is used to increase the timeout for downloading the pytorch module. The download may fail if the timeout is not increased.
+
+Once completed, run:
+```bash
+pip install -r requirements.in -c constraints.txt
+```
+
+This will install all the required packages for the project.
+
+Next, install the following important patches to fix stray errors:
+```
+pip install greenlet==0.4.16 overrides==3.1.0 jsonnetbin
+```
+
+Now, download the pretrained SciCite model from the following link:
+
+[`SciCite`](https://s3-us-west-2.amazonaws.com/ai2-s2-research/scicite/models/scicite.tar.gz)
+
+I named my `tar.gz` file `scicite-pretrained.tar.gz` and put it in under a folder called `scicite`. Please remember the path to this file.
+
+For me, my path is:
+```bash
+C:\Users\ruihan\Downloads\scicite\scicite-pretrained.tar.gz
+```
+
+To begin training, download the 22.1MB scicite data file, extract it and rename the parent folder to `data`.
+
+```
+data
+├── dev.jsonl
+├── test.jsonl
+|── train.jsonl
+└── scaffolds
+    ├── sections-scaffold-train.jsonl
+    └── cite-worthiness-scaffold-train
+```
+
+Please also remember to path to the `data` folder. I put this folder in the same directory as the `scicite` folder.
+
+So, my path is:
+```bash
+C:\Users\ruihan\Downloads\scicite\data
+```
+
+You can now run the allennlp prediction. The command is slightly different from Linux.
+
+On Windows, the equivalent prediction command as below is:
+```bash
+python -m allennlp.run predict "PATH\TO\scicite-pretrained.tar.gz" "PATH\TO\data\train.jsonl" --predictor predictor_scicite --include-package scicite --overrides "{'model':{'data_format':''}}"
+```
+
+You can see the prediction results in the command line.
+
+![](docs/sample-prediction.png)
+
+The sentence "A series of genes (termed exo) involved in succino glycan biosynthesis have been cloned and sequenced (10, 11, 12, 67, 68, 103, 113)." is classified as `background`.
+
+From this, we can see that `allennlp.run predict` is the final command used to test the classifier model.
+
+## Training
+
+To customize and train our own model, perhaps with different feature sets or hyperparameters, the `train_local.py` script is used.
+
+This **requires** a correct `json` config file to be set up, so we can use the example config file `scicite-experiment.json` in the `experiment_configs` folder.
+
+However, it uses the `std.extVar`, which is a environment variable getter. This is not supported in Windows, so we need to replace the `std.extVar` with the actual number or string.
+
+For example:
+```json
+  "random_seed": std.extVar("SEED"),
+  "pytorch_seed": std.extVar("PYTORCH_SEED"),
+  "numpy_seed": std.extVar("NUMPY_SEED"),
+  "mixing_ratio": std.extVar("mixing_ratio"),
+  "mixing_ratio2": std.extVar("mixing_ratio2"),
+  "dataset_reader": {
+    "type": "scicite_datasetreader",
+    "use_sparse_lexicon_features": false,
+    "multilabel": false,
+    "with_elmo": std.extVar("elmo")
+  },
+```
+becomes
+```json
+  "random_seed": 30,
+  "pytorch_seed": 30,
+  "numpy_seed": 30,
+  "mixing_ratio": 0.5,
+  "mixing_ratio2": 0.5,
+  "dataset_reader": {
+    "type": "scicite_datasetreader",
+    "use_sparse_lexicon_features": false,
+    "multilabel": false,
+    "with_elmo": true
+  },
+```
+
+Next, ensure your paths to your training data and scaffolds are set up correctly. They should point to your prior data folder that you downloaded and arranged.
+
+```json
+"train_data_path_aux": "PATH\\TO\\data\\scaffolds\\sections-scaffold-train.jsonl",
+"train_data_path_aux2": "PATH\\TO\\data\\scaffolds\\cite-worthiness-scaffold-train.jsonl",
+"train_data_path": "PATH\\TO\\data\\train.jsonl",
+"validation_data_path": "PATH\\TO\\data\\dev.jsonl",
+"test_data_path": "PATH\\TO\\data\\test.jsonl",
+```
+
+Finally, if you **do not have a GPU**, you must set the `cuda_device` to `-1` in the config file. Of course, if you do have a GPU, it would be preferable to use it.
+```json
+"trainer": {
+  "num_epochs": 10,
+  "grad_clipping": 5.0,
+  "patience": 4,
+  "validation_metric": "+average_F1",
+  "cuda_device": -1,
+  "optimizer": {
+    "type": "adadelta",
+    "rho": 0.95
+  }
+}
+```
+
+Finally, the command needs a folder to output the training logs and results into. Create a new folder in the root of the project called `serialization`.
+
+![](docs/serialization-folder.png)
+
+Now, we can run the training command.
+
+```bash
+python scripts/train_local.py train_multitask_2 "PATH\TO\G20_SciCite\experiment_configs\scicite-experiment.json" -s "PATH\TO\G20_SciCite\serialization" --include-package scicite
+```
+
+This outputs the current F1 scores into the console and also outputs into the serialization folder.
+
+![](docs/training-log.png)
+
+If you stop the training halfway, you can actually recover the training from the last checkpoint by using the `--recover` flag.
+
+```bash
+python scripts/train_local.py train_multitask_2 "PATH\TO\G20_SciCite\experiment_configs\scicite-experiment.json" -s "PATH\TO\G20_SciCite\serialization" --include-package scicite --recover
+```
+
+However, if you want to train a new model, you must **empty the entire serialization folder** and start the training again.
+
+---
 ## Data
 
 We introduce `SciCite` a new large dataset of citation intents. Download from the following link:
