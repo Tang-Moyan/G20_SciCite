@@ -4,39 +4,39 @@ local stringToBool(s) =
   else error "invalid boolean: " + std.manifestJson(s);
 
 local DIM =
-  if stringToBool(std.extVar("elmo")) then
+  if stringToBool("true") then
     1124
   else
     100;
 {
-  "random_seed": std.extVar("SEED"),
-  "pytorch_seed": std.extVar("PYTORCH_SEED"),
-  "numpy_seed": std.extVar("NUMPY_SEED"),
-  "mixing_ratio": std.extVar("mixing_ratio"),
-  "mixing_ratio2": std.extVar("mixing_ratio2"),
+  "random_seed": 42,
+  "pytorch_seed": 42,
+  "numpy_seed": 42,
+  "mixing_ratio": 0.3,
+  "mixing_ratio2": 0.45,
   "dataset_reader": {
     "type": "scicite_datasetreader",
     "use_sparse_lexicon_features": false,
     "multilabel": false,
-    "with_elmo": std.extVar("elmo")
+    "with_elmo": true
   },
   "dataset_reader_aux": {
     "type": "scicite_section_title_data_reader",
-    "with_elmo": std.extVar("elmo")
+    "with_elmo": true
   },
     "dataset_reader_aux2": {
     "type": "scicite_cite_worthiness_data_reader",
-      "with_elmo": std.extVar("elmo")
+      "with_elmo": true
   },
-  "train_data_path_aux": "data/cite-sections.jsonl",
-  "train_data_path_aux2": "data/cite-worthiness.jsonl",
-  "train_data_path": "data/train.jsonl",
-  "validation_data_path": "data/dev.jsonl",
-  "test_data_path": "data/test.jsonl",
+  "train_data_path_aux": "../../../Downloads/scicite/data/scaffolds/sections-scaffold-train.jsonl",
+  "train_data_path_aux2": "../../../Downloads/scicite/data/scaffolds/cite-worthiness-scaffold-train.jsonl",
+  "train_data_path": "../../../Downloads/scicite/data/train.jsonl",
+  "validation_data_path": "../../../Downloads/scicite/data/dev.jsonl",
+  "test_data_path": "../../../Downloads/scicite/data/test.jsonl",
   "evaluate_on_test": true,
   "evaluate_aux_on_test": true,
   "model": {
-    "with_elmo": std.extVar("elmo"),
+    "with_elmo": true,
     "data_format": "scicite_flat_jsonlines",
     "use_sparse_lexicon_features": false,
     "type": "scaffold_bilstm_attention_classifier",
@@ -85,8 +85,8 @@ local DIM =
       "input_dim": 200,
       "num_layers": 2,
       "hidden_dims": [20, 3],
-      "activations": ["linear", "linear"],
-      "dropout": [0.0, 0.0]
+      "activations": ["relu", "relu"],
+      "dropout": [0.2, 0.2]
     },
     "classifier_feedforward_2": {
       "input_dim": 200,
@@ -119,11 +119,11 @@ local DIM =
     "batch_size": 16
   },
   "trainer": {
-    "num_epochs": 10,
+    "num_epochs": 6,
     "grad_clipping": 5.0,
     "patience": 4,
     "validation_metric": "+average_F1",
-    "cuda_device": 0,
+    "cuda_device": -1,
     "optimizer": {
       "type": "adadelta",
       "rho": 0.95
