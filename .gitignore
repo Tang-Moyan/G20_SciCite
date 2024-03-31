@@ -1,5 +1,6 @@
 # Ignore serialization folder
 serialization/
+.idea/
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
