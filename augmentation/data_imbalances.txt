@@ -1,0 +1,46 @@
+
+Data imbalances
+
+Unique Labels: 'background', 'method', 'result'
+
+--TRAIN--
+
+background
+count: 4840
+avg_confidence: 0.8902691445182725
+
+method
+count: 2294
+avg_confidence: 0.8277920182440137
+
+result
+count: 1109
+avg_confidence: 0.8248231981981982
+
+--TEST--
+
+background
+count: 997
+avg_confidence: 0.8306906976744186
+
+method
+count: 605
+avg_confidence: 0.8049328125
+
+result
+count: 259
+avg_confidence: nan
+
+--DEV--
+
+background
+count: 538
+avg_confidence: 0.8827640595903166
+
+method
+count: 255
+avg_confidence: 0.809507476635514
+
+result
+count: 123
+avg_confidence: 0.8505829787234042

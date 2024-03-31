@@ -278,3 +278,8 @@ If you found our dataset, or code useful, please cite [Structural Scaffolds for 
   year="2019"
 }
 ```
+## References
+
+https://github.com/abhimishra91/transformers-tutorials
+
+https://github.com/albertwy/BiLSTM
