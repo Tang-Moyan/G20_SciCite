@@ -13,7 +13,7 @@ class DocumentSummary:
     as well as the raw term frequencies of the terms in the document.
     """
 
-    def __init__(self, document_id, court, date):
+    def __init__(self, document_id):
         """
         Creates a new document summary.
 
@@ -23,8 +23,6 @@ class DocumentSummary:
         """
         self._square_magnitude = 0
         self._document_id = document_id
-        self._court = court
-        self._date = date
         self._term_frequencies = {}
 
     def add_term(self, term, term_frequency):
@@ -43,20 +41,6 @@ class DocumentSummary:
         :rtype: int
         """
         return self._document_id
-
-    def get_court(self):
-        """
-        Returns the court of this document summary.
-        :rtype: str
-        """
-        return self._court
-
-    def get_date(self):
-        """
-        Returns the date of this document summary.
-        :rtype: datetime
-        """
-        return self._date
 
     def get_magnitude(self):
         """

@@ -153,10 +153,10 @@ def process_documents_to_term_tuples(documents, number_of_partitions, index_path
     :param str index_path: the path to the index folder
     :return: a list of filenames that were created by this function
     """
-    tuple_entries = sorted((term, int(document_id), position)
-                           for document_id, title, content, date_posted, court in documents
+    tuple_entries = sorted((term, unique_id, position)
+                           for unique_id, sectionName, string, source in documents
                            for position, term in enumerate(chain([DOCUMENT_EXISTENCE_MARKER],
-                                                                 tokenize_and_reduce(content)
+                                                                 tokenize_and_reduce(string)
                                                                  )))
     # group the term tuples by partition (partition number, compressed term tuples)
     # the partition number is determined by the term's hash
@@ -304,9 +304,7 @@ def bookkeep(partial_index_filenames, document_generator, dictionary_filename, p
 
                     if doc_id not in summaries:
                         # the document has not been seen before
-                        summaries[doc_id] = DocumentSummary(doc_id,
-                                                            document_generator.get_document_court(doc_id),
-                                                            document_generator.get_document_date(doc_id))
+                        summaries[doc_id] = DocumentSummary(doc_id)
 
                     summaries[doc_id].add_term(term, posting.get_term_frequency())
 

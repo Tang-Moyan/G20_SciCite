@@ -20,8 +20,9 @@ class DocumentHarvester:
         self._jsonl_file_path = jsonl_file_path
         self.entries_to_yield = entries_to_yield
 
-        # maps document ID to a tuple of the document date and court
-        self._document_date_and_court: dict[int, tuple[datetime, str]] = {}
+        # a set of unique document IDs
+        self.all_unique_ids = set()
+
         self._number_of_entries_collected = 0
 
     def get_unique_document_count_from_csv(self):
@@ -47,39 +48,32 @@ class DocumentHarvester:
             over, yields a list of documents equal to the number of entries to yield
         """
 
-        reader = pd.read_json(self._jsonl_file_path, lines=True)
+        df = pd.read_json(self._jsonl_file_path, lines=True)
 
-        with open(self._jsonl_file_path, "r", encoding="utf-8") as jsonl_data:
+        entries = []
+        for unique_id, section_name, content, source in df[["unique_id", "sectionName", "string", "source"]].values:
+            self._number_of_entries_collected += 1
 
-            entries = []
-            for document_id, title, content, date_posted, court in csv_reader:
-                self._number_of_entries_collected += 1
-                document_id = int(document_id)
+            self.all_unique_ids.add(unique_id)
 
-                if document_id in self._document_date_and_court:
-                    # Skip duplicate documents
-                    continue
+            entries.append((unique_id,
+                            section_name,
+                            content,
+                            source))
 
-                entries.append((document_id,
-                                title,
-                                content,
-                                datetime.strptime(date_posted, "%Y-%m-%d %H:%M:%S"),
-                                court))
-                self._document_date_and_court[document_id] = (date_posted, court)
-
-                if len(entries) == self.entries_to_yield:
-                    yield entries
-                    entries = []
-
-            if entries:
+            if len(entries) == self.entries_to_yield:
                 yield entries
+                entries = []
+
+        if entries:
+            yield entries
 
     def get_unique_document_ids(self):
         """
         :return: a set of unique document IDs
         :rtype: set[str]
         """
-        return self._document_date_and_court.keys()
+        return self.all_unique_ids
 
     def get_number_of_entries_collected(self):
         """
@@ -87,25 +81,3 @@ class DocumentHarvester:
         :rtype: int
         """
         return self._number_of_entries_collected
-
-    def get_document_date(self, document_id):
-        """
-        :param int document_id: the document ID
-        :return: the document date
-        :rtype: datetime
-        """
-        if document_id not in self._document_date_and_court:
-            raise ValueError(f"Document ID {document_id} not found")
-
-        return self._document_date_and_court[document_id][0]
-
-    def get_document_court(self, document_id):
-        """
-        :param int document_id: the document ID
-        :return: the document court
-        :rtype: str
-        """
-        if document_id not in self._document_date_and_court:
-            raise ValueError(f"Document ID {document_id} not found")
-
-        return self._document_date_and_court[document_id][1]

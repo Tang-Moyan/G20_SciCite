@@ -120,7 +120,7 @@ class DocumentScorer:
         universal_posting_list = self._term_dictionary.get_universal_posting_list()
 
         total_document_count = len(universal_posting_list)
-        assert total_document_count == 17137, f"Total document count is {total_document_count}"
+        #assert total_document_count == 17137, f"Total document count is {total_document_count}"
 
         if document_pool is None:
             document_pool = set(posting.get_document_id()

@@ -23,7 +23,7 @@ def usage():
     print("usage: " + sys.argv[0] + " -d dictionary-file -p postings-file -q file-of-queries -o output-file-of-results")
 
 
-def run_search(dict_file, postings_file, queries_file, results_file):
+def run_search(dict_file, postings_file, query_string):
     """
     using the given dictionary file and postings file,
     perform searching on the given queries file and output the results to a file
@@ -31,34 +31,29 @@ def run_search(dict_file, postings_file, queries_file, results_file):
     logger.info('Running search on the queries...')
     term_dictionary = TermDictionary(dict_file, postings_file)
     document_summary_dictionary = DocumentSummaryDictionary(DOCUMENT_SUMMARY_FILENAME)
-    write_file = open(results_file, 'w')
 
     start_time = time.time()
     search_engine = SearchEngine(term_dictionary, document_summary_dictionary)
 
-    with open(queries_file, 'r') as queries_file:
-        query_str = queries_file.readline().strip()
-        query = Query.parse(query_str)
+    query = Query.parse(query_string)
 
-        relevant_docs = set(int(doc_id) for doc_id in queries_file)
+    # logger.info(f"Relevant docs received: {relevant_docs}")
+    try:
+        # before submission, set k_count to None
+        top_list = search_engine.submit_query(query=query,
+                                                k_count=10,
+                                                relevant_docs=None,
+                                                query_expansion=False,
+                                                pseudo_relevant_feedback=False)
 
-        logger.info(f"Relevant docs received: {relevant_docs}")
-        try:
-            # before submission, set k_count to None
-            top_list = search_engine.submit_query(query=query,
-                                                  relevant_docs=relevant_docs,
-                                                  query_expansion=True,
-                                                  pseudo_relevant_feedback=True)
+        for doc_id, score in top_list:
+            print(f"{doc_id} {score}")
+        logger.debug(f"Length of results: {len(top_list)}")
 
-            write_file.write(' '.join(str(e) for e in top_list))
-            logger.debug(f"Length of results: {len(top_list)}")
-
-        except ValueError as e:
-            print(f"Error: {e}")
+    except ValueError as e:
+        print(f"Error: {e}")
 
     logger.info(f"Query processed in {time.time() - start_time:.5} seconds")
-
-    write_file.close()
 
     term_dictionary.close()
 
@@ -76,19 +71,13 @@ if __name__ == "__main__":
         sys.exit(2)
 
     for o, a in opts:
-        if o == '-d':
-            dictionary_file = a
-        elif o == '-p':
-            postings_file = a
-        elif o == '-q':
-            file_of_queries = a
-        elif o == '-o':
-            file_of_output = a
+        if o == '-q':
+            query = a
         else:
             assert False, "unhandled option"
 
-    if dictionary_file is None or postings_file is None or file_of_queries is None or file_of_output is None:
+    if query is None:
         usage()
         sys.exit(2)
 
-    run_search(dictionary_file, postings_file, file_of_queries, file_of_output)
+    run_search("dictionary", "postings", query)

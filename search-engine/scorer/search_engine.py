@@ -52,7 +52,6 @@ class SearchEngine:
         self._scorer = DocumentScorer(term_dictionary, document_summary_dictionary.map_id_to_magnitude())
         self._term_dictionary = term_dictionary
         self._document_summary_dictionary = document_summary_dictionary
-        self._history = RelevanceHistory(SEARCH_HISTORY_FILENAME)
 
     def submit_query(self, query, relevant_docs=None, k_count=None,
                      query_expansion=False, pseudo_relevant_feedback=False):
@@ -67,23 +66,6 @@ class SearchEngine:
         :return: the list of documents ranked by descending cosine score
         """
         perceived_relevant_docs = None  # weaker than relevant_docs
-
-        if relevant_docs:
-            # if there are relevant docs, we save them to the history recall
-            self._history.save_relevant_docs_with_query(query, relevant_docs)
-            self._history.flush_to_file()
-        else:
-            # if there are no relevant docs, we try to find some in the history
-            past_relevance_docs = self._history.get_relevant_docs(query)
-            if past_relevance_docs.is_exact:
-                # if we have exact matches in the history, we use them as if
-                # relevant docs were provided
-                relevant_docs = set(past_relevance_docs)
-                logger.debug(f"Exact relevance found in search history: {relevant_docs}")
-            else:
-                # otherwise, we use the perceived relevant docs
-                perceived_relevant_docs = set(past_relevance_docs)
-                logger.debug(f"Fuzzy relevance from search history: {perceived_relevant_docs}")
 
         logger.info(f"Query expansion: \t{'enabled' if query_expansion else 'disabled'}")
         logger.info(f"Relevant feedback: \t{'enabled' if pseudo_relevant_feedback else 'disabled'}")
@@ -155,10 +137,7 @@ class SearchEngine:
                                                    document_pool=eligible_documents,
                                                    k_count=k_count,
                                                    with_scores=True)
-
-        return DocumentScorer.rank_with_court_priority(scored_documents,
-                                                       self._document_summary_dictionary,
-                                                       court_weight=0.3)
+        return scored_documents
 
     def get_docs_containing_member(self, member):
         """
