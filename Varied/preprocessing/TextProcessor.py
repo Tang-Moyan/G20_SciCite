@@ -5,7 +5,7 @@ import spacy
 class TextPreprocessor:
     def __init__(self, model="en_core_web_sm", remove_stopwords=True):
         self.nlp = spacy.load(model, disable=['parser', 'ner'])
-        self.remove_stopwords = remove_stopwords
+        self.remove_stopword = remove_stopwords
 
     def remove_punctuation(self, text):
         """
@@ -72,7 +72,7 @@ class TextPreprocessor:
         text = self.remove_punctuation(text)
         text = self.to_lowercase(text)
         tokens = self.tokenize(text)
-        if self.remove_stopwords:
+        if self.remove_stopword:
             tokens = self.remove_stopwords(tokens)
         return tokens
 
