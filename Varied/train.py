@@ -54,7 +54,7 @@ criterion = CrossEntropyLoss()
 optimizer = Adam(model.parameters(), lr=0.001)
 
 # Training and validation loop
-epochs = 2000
+epochs = 15
 metrics = {}
 print("Starting training loop...")
 for epoch in tqdm(range(epochs), desc="Training Epochs"):
@@ -67,41 +67,40 @@ for epoch in tqdm(range(epochs), desc="Training Epochs"):
         loss.backward()
         optimizer.step()
 
-    # Validation and metrics recording every 50 epochs
-    if (epoch + 1) % 50 == 0:
-        model.eval()
-        all_preds = []
-        all_labels = []
-        with torch.no_grad():
-            for inputs, labels in tqdm(val_loader, leave=False, desc=f"Epoch {epoch + 1} Validation"):
-                inputs, labels = inputs.to(device), labels.to(device)  # 将输入数据和标签移动到 GPU 上
-                outputs = model(inputs)
-                _, predicted = torch.max(outputs.data, 1)
-                all_preds.extend(predicted.tolist())
-                all_labels.extend(labels.tolist())
+    # Validation and metrics recording every epoch
+    model.eval()
+    all_preds = []
+    all_labels = []
+    with torch.no_grad():
+        for inputs, labels in tqdm(val_loader, leave=False, desc=f"Epoch {epoch + 1} Validation"):
+            inputs, labels = inputs.to(device), labels.to(device)  # 将输入数据和标签移动到 GPU 上
+            outputs = model(inputs)
+            _, predicted = torch.max(outputs.data, 1)
+            all_preds.extend(predicted.tolist())
+            all_labels.extend(labels.tolist())
 
-        # Calculate metrics
-        accuracy = accuracy_score(all_labels, all_preds)
-        precision = precision_score(all_labels, all_preds, average='macro')
-        recall = recall_score(all_labels, all_preds, average='macro')
-        f1 = f1_score(all_labels, all_preds, average='macro')
+    # Calculate metrics
+    accuracy = accuracy_score(all_labels, all_preds)
+    precision = precision_score(all_labels, all_preds, average='macro')
+    recall = recall_score(all_labels, all_preds, average='macro')
+    f1 = f1_score(all_labels, all_preds, average='macro')
 
-        # Store metrics in a dictionary
-        metrics[epoch + 1] = {
-            'accuracy': accuracy,
-            'precision': precision,
-            'recall': recall,
-            'f1_score': f1
-        }
+    # Store metrics in a dictionary
+    metrics[epoch + 1] = {
+        'accuracy': accuracy,
+        'precision': precision,
+        'recall': recall,
+        'f1_score': f1
+    }
 
-        # Save metrics to a JSON file
-        with open(f'metrics_epoch_{epoch + 1}.json', 'w') as file:
-            json.dump(metrics[epoch + 1], file, indent=4)
+    # Save metrics to a JSON file
+    with open(f'metrics_epoch_{epoch + 1}.json', 'w') as file:
+        json.dump(metrics[epoch + 1], file, indent=4)
 
-        # Save model weights
-        torch.save(model.state_dict(), f'model_epoch_{epoch + 1}.pth')
-        print(
-            f"Epoch {epoch + 1}: Metrics saved. Accuracy: {accuracy}, Precision: {precision}, Recall: {recall}, F1 Score: {f1}")
+    # Save model weights
+    torch.save(model.state_dict(), f'model_epoch_{epoch + 1}.pth')
+    print(
+        f"Epoch {epoch + 1}: Metrics saved. Accuracy: {accuracy}, Precision: {precision}, Recall: {recall}, F1 Score: {f1}")
 
 # Optionally, print final metrics for all recording points
 print("Final Metrics:", json.dumps(metrics, indent=4))
