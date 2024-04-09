@@ -1,6 +1,8 @@
 # Ignore serialization folder
 serialization/
 .idea/
+Varied/glove.42B.300d.txt
+Varied/glove.42B.300d.word2vec.txt
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

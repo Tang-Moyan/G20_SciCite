@@ -1,123 +1,84 @@
 import os
 import torch
+import numpy as np
 from gensim.models import KeyedVectors
 from transformers import BertTokenizer, BertModel
 
 
-class PretrainedEmbeddingModel:
-    def __init__(self, model_name='glove', file_path=None):
-        """
-        Initialize the PretrainedEmbeddingModel class with the specified pretrained model.
+def glove_to_word2vec(glove_input_file, word2vec_output_file):
+    from gensim.scripts.glove2word2vec import glove2word2vec
+    glove2word2vec(glove_input_file, word2vec_output_file)
 
-        Args:
-        model_name (str): Name of the pretrained embedding model to load. Default is 'glove'.
-        file_path (str): File path to the pretrained embedding model if applicable.
-        """
-        self.model_name = model_name.lower()  # Normalize model name to lowercase
+
+class PretrainedEmbeddingModel:
+    def __init__(self, model_name='glove', file_path=None, test=False):
+        self.model_name = model_name.lower()
         self.file_path = file_path
+        self.test = test
         self.embeddings = None
+        self.vocab_size = None
+        self.vocab = {}
+        self.embedding_matrix = None
         self.load_pretrained_embedding()
 
     def load_pretrained_embedding(self):
-        """
-        Load the pretrained embedding model specified by the model_name parameter.
-
-        """
-        if self.model_name == 'glove':
-            self.embeddings = self.load_glove_model()
+        if self.test:
+            self.embedding_matrix, self.vocab = self.generate_random_embeddings()
+        elif self.model_name == 'glove':
+            self.embedding_matrix, self.vocab = self.load_glove_model()
         elif self.model_name == 'fasttext':
-            self.embeddings = self.load_fasttext_model()
+            self.embedding_matrix, self.vocab = self.load_fasttext_model()
         elif self.model_name == 'bert':
-            self.embeddings = self.load_bert_model()
+            self.embedding_matrix, self.vocab = self.load_bert_model()
         else:
-            raise ValueError("Invalid model_name. Please choose from 'glove', 'fasttext', or 'bert'.")
+            raise ValueError("Invalid model_name. Choose 'glove', 'fasttext', or 'bert'.")
 
     def load_glove_model(self):
-        """
-        Load the GloVe model from the specified file path and get embeddings.
-
-        Returns:
-        glove_embeddings (dict): Embeddings from the loaded GloVe model.
-        """
         if not self.file_path or not os.path.exists(self.file_path):
             raise FileNotFoundError(f"File not found: {self.file_path}")
-
-        glove_model = KeyedVectors.load_word2vec_format(self.file_path, binary=False)
-        glove_embeddings = {word: glove_model[word] for word in glove_model.index2word}
-        return glove_embeddings
+        print("Converting GloVe to Word2Vec format...")
+        word2vec_output_file = self.file_path.replace('.txt', '.word2vec.txt')
+        if not os.path.exists(word2vec_output_file):
+            glove_to_word2vec(self.file_path, word2vec_output_file)
+        glove_model = KeyedVectors.load_word2vec_format(word2vec_output_file, binary=False)
+        self.vocab = {word: idx for idx, word in enumerate(glove_model.index_to_key)}
+        embedding_matrix = np.vstack([glove_model[word] for word in glove_model.index_to_key])
+        print("GloVe embeddings loaded.")
+        return torch.from_numpy(embedding_matrix).float(), self.vocab
 
     def load_fasttext_model(self):
-        """
-        Load the FastText model from the specified file path and get embeddings.
-
-        Returns:
-        fasttext_embeddings (dict): Embeddings from the loaded FastText model.
-        """
         if not self.file_path or not os.path.exists(self.file_path):
             raise FileNotFoundError(f"File not found: {self.file_path}")
-
-        fasttext_model = KeyedVectors.load(self.file_path)
-        fasttext_embeddings = {word: fasttext_model[word] for word in fasttext_model.index2word}
-        return fasttext_embeddings
+        fasttext_model = KeyedVectors.load_word2vec_format(self.file_path, binary=True)
+        self.vocab = {word: idx for idx, word in enumerate(fasttext_model.index_to_key)}
+        embedding_matrix = np.vstack([fasttext_model[word] for word in fasttext_model.index_to_key])
+        print("FastText embeddings loaded.")
+        return torch.from_numpy(embedding_matrix).float(), self.vocab
 
     def load_bert_model(self):
-        """
-        Load the BERT model and get embeddings.
-
-        Returns:
-        bert_embeddings (torch.Tensor): Embeddings from the loaded BERT model.
-        """
-        model = BertModel.from_pretrained(self.model_name)
-        tokenizer = BertTokenizer.from_pretrained(self.model_name)
-
-        return model, tokenizer
-
-    def get_embedding(self, word):
-        """
-        Get the embedding for the specified word.
-
-        Args:
-        word (str): The word to get embedding for.
-
-        Returns:
-        embedding (torch.Tensor or numpy.ndarray): The embedding for the word.
-        """
-        if self.embeddings is None:
-            raise ValueError("Embeddings not loaded. Please call load_pretrained_embedding first.")
-
-        if self.model_name in ['glove', 'fasttext']:
-            return self.embeddings.get(word)
-        elif self.model_name == 'bert':
-            model, tokenizer = self.embeddings
-            input_text = word  # Assuming single word is provided
-            inputs = tokenizer(input_text, return_tensors="pt")
+        tokenizer = BertTokenizer.from_pretrained('bert-base-uncased')
+        model = BertModel.from_pretrained('bert-base-uncased')
+        model.eval()
+        embeddings = []
+        self.vocab = {word: idx for idx, word in enumerate(tokenizer.vocab.keys())}
+        print("Loading BERT embeddings...")
+        for word in tokenizer.vocab.keys():
+            idx = tokenizer.convert_tokens_to_ids(word)
             with torch.no_grad():
-                outputs = model(**inputs)
-                embedding = outputs.last_hidden_state.squeeze(0)
-            return embedding
-        else:
-            raise ValueError("Invalid model_name. Please choose from 'glove', 'fasttext', or 'bert'.")
+                output = model(torch.tensor([idx]).unsqueeze(0))
+            embeddings.append(output.last_hidden_state.squeeze(0).mean(0).numpy())
+        print("BERT embeddings loaded.")
+        embedding_matrix = np.vstack(embeddings)
+        return torch.from_numpy(embedding_matrix).float(), self.vocab
 
+    def generate_random_embeddings(self):
+        vocab_size = 10000  # Assuming a vocab size of 10000 for the random case
+        embedding_dim = 300  # Assuming an embedding dimension of 300
+        random_embeddings = np.random.rand(vocab_size, embedding_dim)
+        vocab = {f'word{i}': i for i in range(vocab_size)}
+        return torch.from_numpy(random_embeddings).float(), vocab
 
-# Example usage
-if __name__ == "__main__":
-    # Using GloVe model (default)
-    glove_model_path = 'path/to/glove_vectors.txt'
-    embedding_model = PretrainedEmbeddingModel(model_name='glove', file_path=glove_model_path)
-    print("GloVe embeddings loaded successfully")
-    word = 'example'
-    print(f"Embedding for '{word}':", embedding_model.get_embedding(word))
-
-    # Using FastText model
-    fasttext_model_path = 'path/to/fasttext_vectors.bin'
-    embedding_model = PretrainedEmbeddingModel(model_name='fasttext', file_path=fasttext_model_path)
-    print("FastText embeddings loaded successfully")
-    word = 'example'
-    print(f"Embedding for '{word}':", embedding_model.get_embedding(word))
-
-    # Using BERT model
-    bert_model_name = 'bert-base-uncased'
-    embedding_model = PretrainedEmbeddingModel(model_name='bert', file_path=bert_model_name)
-    print("BERT embeddings loaded successfully")
-    word = 'example'
-    print(f"Embedding for '{word}':", embedding_model.get_embedding(word))
+    def get_embeddings_and_vocab_size(self):
+        if self.embedding_matrix is None or self.vocab is None:
+            raise ValueError("Embeddings not loaded. Call load_pretrained_embedding first.")
+        return self.embedding_matrix, self.vocab
