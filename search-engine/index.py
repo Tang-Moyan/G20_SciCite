@@ -37,13 +37,16 @@ BATCH_COUNT = 4
 
 
 def print_usage():
-    logger.info("usage: " + sys.argv[0] + " -i (data jsonl file) -d (output dictionary filename) -p (output postings filename)")
+    logger.info("usage: " + sys.argv[0] + " -i (data jsonl file)")
 
-def build_index(in_dataset, out_dict, out_postings):
+def build_index(in_dataset):
     """
     build index from documents stored in the input directory,
     then output the dictionary file and postings file
     """
+    out_dict = "dictionary"
+    out_postings = "postings"
+
     os.makedirs(INDEX_PATH, exist_ok=True)
 
     if os.listdir(INDEX_PATH):
@@ -154,7 +157,7 @@ def process_documents_to_term_tuples(documents, number_of_partitions, index_path
     :return: a list of filenames that were created by this function
     """
     tuple_entries = sorted((term, unique_id, position)
-                           for unique_id, sectionName, string, source in documents
+                           for unique_id, string in documents
                            for position, term in enumerate(chain([DOCUMENT_EXISTENCE_MARKER],
                                                                  tokenize_and_reduce(string)
                                                                  )))
@@ -331,15 +334,11 @@ if __name__ == "__main__":
     for o, a in opts:
         if o == '-i':  # input directory
             input_corpus_jsonl = a
-        elif o == '-d':  # dictionary file
-            output_file_dictionary = a
-        elif o == '-p':  # postings file
-            output_file_postings = a
         else:
             assert False, "unhandled option"
 
-    if input_corpus_jsonl is None or output_file_postings is None or output_file_dictionary is None:
+    if input_corpus_jsonl is None:
         print_usage()
         sys.exit(2)
 
-    build_index(input_corpus_jsonl, output_file_dictionary, output_file_postings)
+    build_index(input_corpus_jsonl)

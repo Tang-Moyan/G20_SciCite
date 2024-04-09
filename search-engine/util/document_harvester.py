@@ -51,15 +51,12 @@ class DocumentHarvester:
         df = pd.read_json(self._jsonl_file_path, lines=True)
 
         entries = []
-        for unique_id, section_name, content, source in df[["unique_id", "sectionName", "string", "source"]].values:
+        for unique_id, content in df[["unique_id", "string"]].values:
             self._number_of_entries_collected += 1
 
             self.all_unique_ids.add(unique_id)
 
-            entries.append((unique_id,
-                            section_name,
-                            content,
-                            source))
+            entries.append((unique_id, content))
 
             if len(entries) == self.entries_to_yield:
                 yield entries

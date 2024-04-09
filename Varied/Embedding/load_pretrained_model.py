@@ -36,13 +36,24 @@ class PretrainedEmbeddingModel:
     def load_glove_model(self):
         if not self.file_path or not os.path.exists(self.file_path):
             raise FileNotFoundError(f"File not found: {self.file_path}")
-        print("Converting GloVe to Word2Vec format...")
+        
+        if self.file_path.endswith('.npy'):
+            print("Loading saved numpy GloVe embeddings matrix...")
+            embedding_matrix = np.load(self.file_path)
+            return torch.from_numpy(embedding_matrix).float(), self.vocab
+
         word2vec_output_file = self.file_path.replace('.txt', '.word2vec.txt')
         if not os.path.exists(word2vec_output_file):
+            print("Converting GloVe to Word2Vec format...")
             glove_to_word2vec(self.file_path, word2vec_output_file)
+
+        print("Loading GloVe embeddings...")
+        glove_embedding_matrix_name = self.file_path.replace('.txt', '.npy')
+        print("No saved numpy GloVe embeddings matrix found. Creating from Word2Vec format...")
         glove_model = KeyedVectors.load_word2vec_format(word2vec_output_file, binary=False)
-        self.vocab = {word: idx for idx, word in enumerate(glove_model.index_to_key)}
         embedding_matrix = np.vstack([glove_model[word] for word in glove_model.index_to_key])
+        np.save(glove_embedding_matrix_name, embedding_matrix)
+        
         print("GloVe embeddings loaded.")
         return torch.from_numpy(embedding_matrix).float(), self.vocab
 

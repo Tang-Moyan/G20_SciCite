@@ -41,10 +41,10 @@ def run_search(dict_file, postings_file, query_string):
     try:
         # before submission, set k_count to None
         top_list = search_engine.submit_query(query=query,
-                                                k_count=10,
-                                                relevant_docs=None,
-                                                query_expansion=False,
-                                                pseudo_relevant_feedback=False)
+                                            k_count=10,
+                                            relevant_docs=None,
+                                            query_expansion=True,
+                                            pseudo_relevant_feedback=False)
 
         for doc_id, score in top_list:
             print(f"{doc_id} {score}")

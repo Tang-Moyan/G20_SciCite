@@ -1,6 +1,9 @@
 import re
 import spacy
 
+# Download the en_core_web_sm model by running the following command in the terminal:
+# python -m spacy download en_core_web_sm
+
 
 class TextPreprocessor:
     def __init__(self, model="en_core_web_sm", remove_stopwords=True):

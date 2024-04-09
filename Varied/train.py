@@ -10,6 +10,12 @@ from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_sc
 from tqdm import tqdm
 from Embedding.load_pretrained_model import PretrainedEmbeddingModel
 
+print("READ ME:")
+print("Ensure that you have downloaded the spacy en_core_web_sm model by running the following command in the terminal:")
+print("python -m spacy download en_core_web_sm")
+print("Ensure that you have the numpy embedding matrix file downloaded and saved into the Varied folder.")
+input("Press any key once you are ready to train.")
+
 # 检查是否有可用的 GPU
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 print("Using device:", device)
@@ -19,12 +25,13 @@ eda = EDA()
 preprocessed_strings, labels, label_confidence = eda.get_train(save_train=False)
 
 # Load pretrained embeddings
-embedding_model = PretrainedEmbeddingModel(model_name='glove', file_path='glove.42B.300d.txt', test=False)
+embedding_model = PretrainedEmbeddingModel(model_name='glove', file_path='glove.42B.300d.npy', test=False)
 embeddings_matrix, _ = embedding_model.get_embeddings_and_vocab_size()
 
 # Create dataset and perform train/validation split
+print("Creating dataset...")
 dataset = CustomDataset(preprocessed_strings, labels, label_confidence, model_name='glove',
-                        file_path='glove.42B.300d.txt', use_label_smoothing=False, test=True)
+                        embedding_model=embedding_model, use_label_smoothing=False, test=True)
 train_size = int(0.8 * len(dataset))
 val_size = len(dataset) - train_size
 print("Splitting dataset into training and validation sets...")
@@ -42,6 +49,7 @@ embedding_dim = 300
 vocab_size = len(embeddings_matrix)
 model = BiLSTMGRUClassifier(input_dim=vocab_size, embedding_dim=embedding_dim, hidden_dim=256, output_dim=3,
                             pretrained_embeddings=embeddings_matrix)
+model.to(device)
 criterion = CrossEntropyLoss()
 optimizer = Adam(model.parameters(), lr=0.001)
 
