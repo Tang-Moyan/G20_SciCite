@@ -6,6 +6,7 @@ from base_line_model.BiLSTM_classifier import BiLSTMGRUClassifier
 from myDataset import CustomDataset
 from EDA import EDA
 import json
+from sklearn.linear_model import LogisticRegression
 from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_score
 from tqdm import tqdm
 from Embedding.load_pretrained_model import PretrainedEmbeddingModel
@@ -47,8 +48,11 @@ print("Finished loading data into DataLoader.")
 print("Setting up model...")
 embedding_dim = 300
 vocab_size = len(embeddings_matrix)
+'''
 model = BiLSTMGRUClassifier(input_dim=vocab_size, embedding_dim=embedding_dim, hidden_dim=256, output_dim=3,
                             pretrained_embeddings=embeddings_matrix)
+'''
+model = LogisticRegression(multi_class='multinomial')
 model.to(device)
 criterion = CrossEntropyLoss()
 optimizer = Adam(model.parameters(), lr=0.001)
@@ -58,26 +62,35 @@ epochs = 15
 metrics = {}
 print("Starting training loop...")
 for epoch in tqdm(range(epochs), desc="Training Epochs"):
-    model.train()
+    
+    #model.train()
     for inputs, labels in tqdm(train_loader, leave=False, desc=f"Epoch {epoch + 1} Training"):
         inputs, labels = inputs.to(device), labels.to(device)  # 将输入数据和标签移动到 GPU 上
+        model.fit(inputs, labels)
+        '''
         optimizer.zero_grad()
         outputs = model(inputs)
         loss = criterion(outputs, labels.squeeze(1))
         loss.backward()
         optimizer.step()
+        '''
 
     # Validation and metrics recording every epoch
-    model.eval()
+    
+    #model.eval()
     all_preds = []
     all_labels = []
     with torch.no_grad():
         for inputs, labels in tqdm(val_loader, leave=False, desc=f"Epoch {epoch + 1} Validation"):
             inputs, labels = inputs.to(device), labels.to(device)  # 将输入数据和标签移动到 GPU 上
+            all_preds = model.predict(inputs)
+            all_labels = labels
+            '''
             outputs = model(inputs)
             _, predicted = torch.max(outputs.data, 1)
             all_preds.extend(predicted.tolist())
             all_labels.extend(labels.tolist())
+            '''
 
     # Calculate metrics
     accuracy = accuracy_score(all_labels, all_preds)
