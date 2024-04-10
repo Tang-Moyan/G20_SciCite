@@ -10,6 +10,12 @@ from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_sc
 from tqdm import tqdm
 from Embedding.load_pretrained_model import PretrainedEmbeddingModel
 
+print("READ ME:")
+print("Ensure that you have downloaded the spacy en_core_web_sm model by running the following command in the terminal:")
+print("python -m spacy download en_core_web_sm")
+print("Ensure that you have the numpy embedding matrix file downloaded and saved into the Varied folder.")
+input("Press any key once you are ready to train.")
+
 # 检查是否有可用的 GPU
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 print("Using device:", device)
@@ -19,12 +25,13 @@ eda = EDA()
 preprocessed_strings, labels, label_confidence = eda.get_train(save_train=False)
 
 # Load pretrained embeddings
-embedding_model = PretrainedEmbeddingModel(model_name='glove', file_path='glove.42B.300d.txt', test=False)
+embedding_model = PretrainedEmbeddingModel(model_name='glove', file_path='glove.42B.300d.npy', test=False)
 embeddings_matrix, _ = embedding_model.get_embeddings_and_vocab_size()
 
 # Create dataset and perform train/validation split
+print("Creating dataset...")
 dataset = CustomDataset(preprocessed_strings, labels, label_confidence, model_name='glove',
-                        file_path='glove.42B.300d.txt', use_label_smoothing=False, test=True)
+                        embedding_model=embedding_model, use_label_smoothing=False, test=True)
 train_size = int(0.8 * len(dataset))
 val_size = len(dataset) - train_size
 print("Splitting dataset into training and validation sets...")
@@ -42,11 +49,12 @@ embedding_dim = 300
 vocab_size = len(embeddings_matrix)
 model = BiLSTMGRUClassifier(input_dim=vocab_size, embedding_dim=embedding_dim, hidden_dim=256, output_dim=3,
                             pretrained_embeddings=embeddings_matrix)
+model.to(device)
 criterion = CrossEntropyLoss()
 optimizer = Adam(model.parameters(), lr=0.001)
 
 # Training and validation loop
-epochs = 2000
+epochs = 15
 metrics = {}
 print("Starting training loop...")
 for epoch in tqdm(range(epochs), desc="Training Epochs"):
@@ -59,41 +67,40 @@ for epoch in tqdm(range(epochs), desc="Training Epochs"):
         loss.backward()
         optimizer.step()
 
-    # Validation and metrics recording every 50 epochs
-    if (epoch + 1) % 50 == 0:
-        model.eval()
-        all_preds = []
-        all_labels = []
-        with torch.no_grad():
-            for inputs, labels in tqdm(val_loader, leave=False, desc=f"Epoch {epoch + 1} Validation"):
-                inputs, labels = inputs.to(device), labels.to(device)  # 将输入数据和标签移动到 GPU 上
-                outputs = model(inputs)
-                _, predicted = torch.max(outputs.data, 1)
-                all_preds.extend(predicted.tolist())
-                all_labels.extend(labels.tolist())
+    # Validation and metrics recording every epoch
+    model.eval()
+    all_preds = []
+    all_labels = []
+    with torch.no_grad():
+        for inputs, labels in tqdm(val_loader, leave=False, desc=f"Epoch {epoch + 1} Validation"):
+            inputs, labels = inputs.to(device), labels.to(device)  # 将输入数据和标签移动到 GPU 上
+            outputs = model(inputs)
+            _, predicted = torch.max(outputs.data, 1)
+            all_preds.extend(predicted.tolist())
+            all_labels.extend(labels.tolist())
 
-        # Calculate metrics
-        accuracy = accuracy_score(all_labels, all_preds)
-        precision = precision_score(all_labels, all_preds, average='macro')
-        recall = recall_score(all_labels, all_preds, average='macro')
-        f1 = f1_score(all_labels, all_preds, average='macro')
+    # Calculate metrics
+    accuracy = accuracy_score(all_labels, all_preds)
+    precision = precision_score(all_labels, all_preds, average='macro')
+    recall = recall_score(all_labels, all_preds, average='macro')
+    f1 = f1_score(all_labels, all_preds, average='macro')
 
-        # Store metrics in a dictionary
-        metrics[epoch + 1] = {
-            'accuracy': accuracy,
-            'precision': precision,
-            'recall': recall,
-            'f1_score': f1
-        }
+    # Store metrics in a dictionary
+    metrics[epoch + 1] = {
+        'accuracy': accuracy,
+        'precision': precision,
+        'recall': recall,
+        'f1_score': f1
+    }
 
-        # Save metrics to a JSON file
-        with open(f'metrics_epoch_{epoch + 1}.json', 'w') as file:
-            json.dump(metrics[epoch + 1], file, indent=4)
+    # Save metrics to a JSON file
+    with open(f'metrics_epoch_{epoch + 1}.json', 'w') as file:
+        json.dump(metrics[epoch + 1], file, indent=4)
 
-        # Save model weights
-        torch.save(model.state_dict(), f'model_epoch_{epoch + 1}.pth')
-        print(
-            f"Epoch {epoch + 1}: Metrics saved. Accuracy: {accuracy}, Precision: {precision}, Recall: {recall}, F1 Score: {f1}")
+    # Save model weights
+    torch.save(model.state_dict(), f'model_epoch_{epoch + 1}.pth')
+    print(
+        f"Epoch {epoch + 1}: Metrics saved. Accuracy: {accuracy}, Precision: {precision}, Recall: {recall}, F1 Score: {f1}")
 
 # Optionally, print final metrics for all recording points
 print("Final Metrics:", json.dumps(metrics, indent=4))
