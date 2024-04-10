@@ -6,7 +6,7 @@ import torch.nn.init as init
 
 class BiLSTMGRUClassifier(nn.Module):
     def __init__(self, input_dim, embedding_dim, hidden_dim, output_dim, pretrained_embeddings, num_layers=2,
-                 dropout=0.5):
+                 dropout=0.2):
         super(BiLSTMGRUClassifier, self).__init__()
         self.embedding = nn.Embedding(input_dim, embedding_dim)
         self.embedding.weight.data.copy_(pretrained_embeddings)
@@ -28,7 +28,7 @@ class BiLSTMGRUClassifier(nn.Module):
         lstm_output, _ = self.bilstm(embedded)
         gru_output, _ = self.bigru(lstm_output)
         hidden = torch.cat((gru_output[:, -1, :self.hidden_dim], gru_output[:, 0, self.hidden_dim:]), dim=1)
-        return F.log_softmax(self.fc(hidden), dim=-1)
+        return self.fc(hidden)
 
     def _init_orthogonal(self, layer):
         for name, parameter in layer.named_parameters():
