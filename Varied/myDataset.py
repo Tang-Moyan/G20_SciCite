@@ -18,7 +18,7 @@ class CustomDataset(Dataset):
                 self.embedding_model = PretrainedEmbeddingModel(model_name=model_name, file_path=file_path)
             else:
                 self.embedding_model = embedding_model
-        self.textProcessor = TextPreprocessor(remove_stopwords=False)
+        self.textProcessor = TextPreprocessor()
         self.max_seq_length = max_seq_length
         self.embedding_dim = embedding_dim
         self.test = test
@@ -35,17 +35,19 @@ class CustomDataset(Dataset):
         words = self.textProcessor.tokenize(text)
 
         # 确保长度一致性
+        # Adjust the length of the sequence
         if len(words) > self.max_seq_length:
             words = words[:self.max_seq_length]
         elif len(words) < self.max_seq_length:
             words += ['<PAD>'] * (self.max_seq_length - len(words))
 
         # 根据是否使用随机嵌入来获取索引
+        # Get indices based on whether random embeddings are used
         if self.test:
             indices = torch.randint(high=10000, size=(self.max_seq_length,), dtype=torch.long)
         else:
-            indices = [self.embedding_model.vocab.get(word, self.embedding_model.vocab.get('<UNK>', 0)) for word in
-                       words]
+            # Usually control flows here:
+            indices = [self.embedding_model.vocab.get(word, self.embedding_model.vocab.get('<UNK>', 0)) for word in words]
             indices = torch.tensor(indices, dtype=torch.long)
 
         label = self.labels[idx]

@@ -6,10 +6,17 @@ import spacy
 
 
 class TextPreprocessor:
-    def __init__(self, model="en_core_web_sm", remove_stopwords=True):
+    def __init__(self,
+                 model="en_core_web_sm",
+                 remove_stopwords=False,
+                 preserve_punctuation=True,
+                 preserve_case=True
+                ):
         self.nlp = spacy.load(model, disable=['parser', 'ner'])
         self.remove_stopwords_flag = remove_stopwords
         self.vocab = set()  # Initialize an empty set to store vocabulary
+        self.preserve_punctuation = preserve_punctuation
+        self.preserve_case = preserve_case
 
     def remove_punctuation(self, text):
         preserved_punctuation = ".!?"
@@ -34,20 +41,26 @@ class TextPreprocessor:
         return len(self.vocab)
 
     def preprocess_text(self, text):
-        text = self.remove_punctuation(text)
-        text = self.to_lowercase(text)
+        if not self.preserve_punctuation:
+            text = self.remove_punctuation(text)
+
+        if not self.preserve_case:
+            text = self.to_lowercase(text)
+
         tokens = self.tokenize(text)
+
         if self.remove_stopwords_flag:
             tokens = self.remove_stopwords(tokens)
+
         self.update_vocab(tokens)  # Update the vocabulary with tokens from the processed text
         return tokens
 
 
 # Example usage
 if __name__ == "__main__":
-    text = "This is an example sentence, showing the process of text preprocessing!"
+    text = "It was observed that frataxin interacts with the iron-sulfur cluster assembly complex, forming a complex that is essential for the biogenesis of iron-sulfur clusters."
 
-    preprocessor = TextPreprocessor(remove_stopwords=True)
+    preprocessor = TextPreprocessor()
     preprocessed_text = preprocessor.preprocess_text(text)
     print("Preprocessed text:", preprocessed_text)
     print("Vocabulary size:", preprocessor.get_vocab_size())
