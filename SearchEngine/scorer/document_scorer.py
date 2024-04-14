@@ -75,7 +75,7 @@ class DocumentScorer:
         :param dict[int, Document] magnitudes_dictionary: the mapping of document IDs to documents
         """
         self._term_dictionary: TermDictionary = term_dictionary
-        self._magnitudes: dict[int, float] = magnitudes_dictionary
+        self._magnitudes: dict[str, float] = magnitudes_dictionary
 
     class DocumentScore:
         """
@@ -104,7 +104,7 @@ class DocumentScorer:
         def __lt__(self, other):
             return self.score < other.score
 
-    def rank_top_k(self, query: Query, document_pool=None, k_count=None, with_scores=False):
+    def rank_top_k(self, query: Query, document_pool=None, k_count=None, with_scores=False, use_tfidf=True):
         """
         :param Query query: the query to rank the documents by
         :param set[int] document_pool: the set of documents to rank. If None, all documents are ranked
@@ -127,7 +127,7 @@ class DocumentScorer:
                                 for posting in universal_posting_list)
         # document_pool is the set of documents to rank <= full set of documents
 
-        scores: dict[int, DocumentScorer.DocumentScore] = {}
+        scores: dict[str, DocumentScorer.DocumentScore] = {}
         # scores contains all the documents with at least one term in the query <= document pool size
 
         for term in query.get_tokens():
@@ -142,9 +142,8 @@ class DocumentScorer:
             if document_frequency == 0:
                 # if the query term does not appear in any document, then it is not relevant
                 continue
-
-            weighted_query_term_frequency = (1 + log(frequency, 10)) * log(total_document_count
-                                                                           / document_frequency, 10)
+                
+            weighted_query_term_frequency = (1 + log(frequency, 10)) * log(total_document_count / document_frequency, 10) if use_tfidf else frequency
 
             document_postings_iterator = document_postings.to_iterator()
 
@@ -164,7 +163,7 @@ class DocumentScorer:
                 scores[doc_id].score += additional_score
 
         for document_id, score in scores.items():
-            magnitude = self._magnitudes[document_id]
+            magnitude = self._magnitudes[str(document_id)]
             score.score = 0 if magnitude == 0 else score.score / magnitude
 
         if k_count is not None:

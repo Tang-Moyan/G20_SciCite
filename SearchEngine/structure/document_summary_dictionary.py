@@ -34,6 +34,6 @@ class DocumentSummaryDictionary(dict):
         """
         Returns a dictionary that maps each document id to the magnitude of the document.
 
-        :rtype: dict[int, float]
+        :rtype: dict[str, float]
         """
         return {doc_id: self[doc_id].get_magnitude() for doc_id in self}

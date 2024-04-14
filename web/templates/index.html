@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <!-- Required meta tags -->
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-EVSTQN3/azprG1Anm3QDgpJLIm9Nao0Yz1ztcQTwFspd3yD65VohhpuuCOmLASjC" crossorigin="anonymous">
+
+    <!-- Stylesheet -->
+    <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='main.css') }}">
+
+    {{ fontawesome_html() }}
+
+    <title>CLARA</title>
+</head>
+<body>
+    <header class="header">
+        <nav class="navbar navbar-expand-lg navbar-light bg-light">
+            <div class="container-fluid">
+                <a class="navbar-brand" href="#">CLARA</a>
+                <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+                    <span class="navbar-toggler-icon"></span>
+                </button>
+                <div class="collapse navbar-collapse" id="navbarNav">
+                    <ul class="navbar-nav">
+                        <li class="nav-item">
+                            <a class="nav-link active" aria-current="page" href="#">Home</a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="#">About</a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="#">Contact</a>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+        </nav>
+    </header>
+
+    <!-- Make a short description -->
+    <div class="p-3 mb-5 bg-secondary text-white">
+        <p> This is an interactive demo of the Classifier Labelling Assisted Rocchio Algorithm. It performs a vector space model search on a dataset of documents and returns a refined ranking of relevant documents based on the user's query using a modified Rocchio Algorithm operated on Natural Language Processing and Machine Learning techniques. </p>
+    </div>
+
+    <!-- Make a search bar -->
+    <div class="container">
+        <!-- Center the search bar horizontally but not vertically -->
+        <div class="d-flex justify-content-center">
+            <div class="search">
+                <input id="searchInput" class="search_input" type="text" name="" placeholder="Search here...">
+                <button id="searchButton" class="search_icon"><i class="fa fa-search"></i></button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Print response here -->
+    <div id="response" class="container justify-content-center align-items-center flex-column mt-5">
+        <!-- Response will be printed here -->
+    </div>    
+
+    <!-- Option 1: Bootstrap Bundle with Popper -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/js/bootstrap.bundle.min.js" integrity="sha384-MrcW6ZMFYlzcLA8Nl+NtUVF0sA7MsXsP1UyJoMp4YLEuNSfAP+JcXn/tWtIaxVXM" crossorigin="anonymous"></script>
+
+    <!-- Your custom JavaScript code -->
+    <script>
+        document.getElementById('searchButton').addEventListener('click', function() {
+            document.getElementById('response').innerText = 'Loading';
+            
+            const loadingInterval = setInterval(function() {
+                const responseElement = document.getElementById('response');
+                responseElement.innerText += '.';
+                // Reset to 'Loading' if the loading message exceeds 'Loading...'
+                if (responseElement.innerText.length > 11) {
+                    responseElement.innerText = 'Loading';
+                }
+            }, 1000); // Update every 1 second
+
+            var query = document.getElementById('searchInput').value;
+            fetch('/search', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                },
+                body: 'query=' + encodeURIComponent(query)
+            })
+            .then(response => response.json())
+            .then(data => {
+                console.log('Success:', data);
+                clearInterval(loadingInterval);
+                // Clear the response element
+                document.getElementById('response').innerHTML = '';
+
+                // Construct a table
+                const table = document.createElement('table');
+                table.classList.add('table', 'table-striped', 'table-bordered', 'table-hover');
+                const thead = document.createElement('thead');
+                const tbody = document.createElement('tbody');
+                const theadRow = document.createElement('tr');
+                const theadTh1 = document.createElement('th');
+                theadTh1.innerText = 'ID';
+                const theadTh2 = document.createElement('th');
+                theadTh2.innerText = 'Citation';
+                theadRow.appendChild(theadTh1);
+                theadRow.appendChild(theadTh2);
+                thead.appendChild(theadRow);
+                table.appendChild(thead);
+
+                data.message.forEach(item => {
+                    const tr = document.createElement('tr');
+                    const td1 = document.createElement('td');
+                    td1.innerText = item.id;
+                    const td2 = document.createElement('td');
+                    td2.innerText = item.citation;
+                    tr.appendChild(td1);
+                    tr.appendChild(td2);
+                    tbody.appendChild(tr);
+                });
+
+                table.appendChild(tbody);
+                document.getElementById('response').appendChild(table);
+            })
+            .catch(error => {
+                clearInterval(loadingInterval);
+                console.error('Error:', error);
+            });
+        });
+    </script>
+</body>
+</html>

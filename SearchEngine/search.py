@@ -20,10 +20,10 @@ HISTORY_RECALL_FILENAME = 'search_history.txt'
 
 
 def usage():
-    print("usage: " + sys.argv[0] + " -d dictionary-file -p postings-file -q file-of-queries -o output-file-of-results")
+    print("usage: " + sys.argv[0] + " -q query -c corpus_file_jsonl")
 
 
-def run_search(dict_file, postings_file, query_string):
+def run_search(dict_file, postings_file, query_string, corpus_file_jsonl):
     """
     using the given dictionary file and postings file,
     perform searching on the given queries file and output the results to a file
@@ -33,7 +33,7 @@ def run_search(dict_file, postings_file, query_string):
     document_summary_dictionary = DocumentSummaryDictionary(DOCUMENT_SUMMARY_FILENAME)
 
     start_time = time.time()
-    search_engine = SearchEngine(term_dictionary, document_summary_dictionary)
+    search_engine = SearchEngine(term_dictionary, document_summary_dictionary, corpus_file_jsonl)
 
     query = Query.parse(query_string)
 
@@ -43,8 +43,8 @@ def run_search(dict_file, postings_file, query_string):
         top_list = search_engine.submit_query(query=query,
                                             k_count=10,
                                             relevant_docs=None,
-                                            query_expansion=True,
-                                            pseudo_relevant_feedback=False)
+                                            query_expansion=False,
+                                            pseudo_relevant_feedback=True)
 
         for doc_id, score in top_list:
             print(f"{doc_id} {score}")
@@ -62,22 +62,28 @@ if __name__ == "__main__":
     nltk.download('wordnet')
     nltk.download('stopwords')
 
-    dictionary_file = postings_file = file_of_queries = file_of_output = None
+    query = corpus_file_jsonl = None
 
     try:
-        opts, args = getopt.getopt(sys.argv[1:], 'd:p:q:o:')
+        opts, args = getopt.getopt(sys.argv[1:], 'q:c:')
     except getopt.GetoptError:
         usage()
         sys.exit(2)
 
     for o, a in opts:
+        print(o, a)
         if o == '-q':
             query = a
+        elif o == '-c':
+            corpus_file_jsonl = a
         else:
             assert False, "unhandled option"
 
-    if query is None:
+    print(f"query: {query}")
+    print(f"corpus_file_jsonl: {corpus_file_jsonl}")
+
+    if query is None or corpus_file_jsonl is None:
         usage()
         sys.exit(2)
 
-    run_search("dictionary", "postings", query)
+    run_search("dictionary", "postings", query, corpus_file_jsonl)

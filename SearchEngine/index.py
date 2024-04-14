@@ -272,7 +272,7 @@ def bookkeep(partial_index_filenames, document_generator, dictionary_filename, p
     """
     posting_file = open(posting_filename, "wb")  # the final posting file to be used by the search engine
     dictionary_entries = []
-    summaries: dict[int, DocumentSummary] = {}  # document ID -> document summary
+    summaries: dict[str, DocumentSummary] = {}  # document ID -> document summary
 
     # iterate through each mini index file
     for filename in partial_index_filenames:
@@ -303,7 +303,7 @@ def bookkeep(partial_index_filenames, document_generator, dictionary_filename, p
 
                 for posting in posting_list_iter:
                     posting: DocumentPosting
-                    doc_id = posting.get_document_id()
+                    doc_id = str(posting.get_document_id())
 
                     if doc_id not in summaries:
                         # the document has not been seen before

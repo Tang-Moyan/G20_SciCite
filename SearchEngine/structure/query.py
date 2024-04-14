@@ -17,6 +17,7 @@ class Query:
         def __init__(self, is_phrase, members):
             """
             Creates a new group of terms.
+
             :param bool is_phrase: whether the group is a phrase
             :param set[str] members: the members of the group
             """
@@ -51,7 +52,7 @@ class Query:
                 return self._is_phrase == other._is_phrase and self.members == other.members
             return False
 
-    def __init__(self, tokens: dict = None, literal_groups: list = None):
+    def __init__(self, query_string, tokens: dict = None, literal_groups: list = None):
         """
         Creates a new query object.
 
@@ -64,6 +65,7 @@ class Query:
         :param list[Group] literal_groups: groups of terms that are joined by conjunction (AND).
          Each group is a tuple of a boolean indicating whether the group is a phrase, and a list of terms.
         """
+        self._query_string = query_string
         self._token_weight = tokens if tokens else {}
         self._token_groups = literal_groups if literal_groups else []
 
@@ -106,7 +108,7 @@ class Query:
                 token_frequency[token] = token_frequency.get(token, 0) + 1
 
         # create a new query object using the parsed tokens and token groups
-        return Query(token_frequency, token_groups)
+        return Query(query, token_frequency, token_groups)
 
     def copy(self):
         """
@@ -114,7 +116,7 @@ class Query:
 
         :rtype: Query
         """
-        return Query(self._token_weight.copy(), [group.copy() for group in self._token_groups])
+        return Query(self._query_string, self._token_weight.copy(), [group.copy() for group in self._token_groups])
 
     def get_tokens(self):
         """
@@ -122,6 +124,7 @@ class Query:
 
         :rtype: list[str]
         """
+        print("Token weights", self._token_weight)
         return list(self._token_weight.keys())
 
     def get_token_groups(self):
@@ -142,6 +145,14 @@ class Query:
         if term in self._token_weight:
             return self._token_weight[term]
         return 0
+    
+    def get_query_string(self):
+        """
+        Returns the query string.
+
+        :rtype: str
+        """
+        return self._query_string
 
     def contains_token_or_phrase(self, term):
         """
