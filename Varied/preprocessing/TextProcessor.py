@@ -16,6 +16,7 @@ class TextPreprocessor:
         self.remove_stopwords_flag = remove_stopwords
         self.vocab = set()  # Initialize an empty set to store vocabulary
         self.preserve_punctuation = preserve_punctuation
+
         self.preserve_case = preserve_case
 
     def remove_punctuation(self, text):

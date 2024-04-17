@@ -62,6 +62,8 @@ class EDA:
 if __name__ == "__main__":
     eda = EDA()
     preprocessed_strings, labels, label_confidence = eda.get_train(save_train=True)
+    tokenized_texts = [text for text in preprocessed_strings]
+    longest_sentence = max(tokenized_texts, key=len)
 
     # Print the first 5 samples
     for i in range(5):
