@@ -14,59 +14,12 @@ from util.stemmer import stem
 import pandas as pd
 import spacy
 from nltk.corpus import wordnet as wn
+from gensim.models import Word2Vec
 
 nlp = spacy.load("en_core_web_sm")
 
 SEARCH_HISTORY_FILENAME = './search_history.txt'
 
-# Function to get the synsets of a word
-def get_synsets(word):
-    '''
-    Returns the synsets of a word
-    '''
-    return wn.synsets(word)
-
-def calculate_similarity(word1, word2):
-    '''
-    Returns the similarity between two words
-
-    :param str word1: the first word
-    :param str word2: the second word
-    '''
-    synsets1 = get_synsets(word1)
-    synsets2 = get_synsets(word2)
-    
-    max_similarity = 0.0
-    
-    for synset1 in synsets1:
-        for synset2 in synsets2:
-            similarity = synset1.path_similarity(synset2)
-            if similarity is not None and similarity > max_similarity:
-                max_similarity = similarity
-    
-    return max_similarity
-
-def get_centroid(documents, document_summary_dictionary):
-    """
-    Get the centroid of the documents
-
-    :param set[int] documents: the set of documents
-    :param DocumentSummaryDictionary document_summary_dictionary: the document summary dictionary
-    :return: the centroid of the documents
-    """
-    centroid = {}
-    for doc_id in documents:
-        if doc_id not in document_summary_dictionary:
-            logger.error(f"Document ID {doc_id} not found in document summary dictionary")
-            continue
-
-        summary: DocumentSummary = document_summary_dictionary[doc_id]
-
-        for term in summary.get_top_terms(100, min_length=0):
-            centroid.setdefault(term, 0)
-            centroid[term] += summary.get_term_frequency(term, stem_term=False)
-
-    return centroid
 
 def promote_relevant_docs(relevant_docs, scored_documents):
     """
@@ -95,7 +48,7 @@ class SearchEngine:
     Processes a compound query.
     """
 
-    def __init__(self, term_dictionary, document_summary_dictionary, corpus_file_jsonl):
+    def __init__(self, term_dictionary, document_summary_dictionary, corpus_file_jsonl, word2vec_file_location):
         """
         Creates a new compound query processor with the given term dictionary and cosine score calculator.
 
@@ -111,8 +64,26 @@ class SearchEngine:
         # This is hack, load the corpus (jsonl) into memory (because I need to find the original document string)
         self._corpus = pd.read_json(corpus_file_jsonl, lines=True, dtype={'unique_id': str})
 
+        self._word2vec = Word2Vec.load(word2vec_file_location)
 
-    def submit_query(self, query, relevant_docs=None, k_count=None,
+
+    def submit_query(self, query, k_count=20):
+        """
+        Process a query string and return a list of document IDs that matches the query in the given order.
+
+        :param Query query: the query to rank the documents by
+        :param int k_count: the number of top results to return, defaulted to 20
+        :return: the list of documents ranked by descending cosine score, and the query vector
+        """
+        eligible_docs = self.get_eligible_docs(query)
+
+        # Rank the eligible documents
+        scored_documents = self._rank(query, eligible_docs, k_count=k_count)
+
+        return scored_documents
+
+
+    def submit_query_with_options(self, query, relevant_docs=None, k_count=None,
                      query_expansion=False, pseudo_relevant_feedback=False):
         """
         Process a query string and return a list of document IDs that matches the query in the given order.
@@ -143,7 +114,7 @@ class SearchEngine:
             print(f"{doc_id} {score}")
 
         if pseudo_relevant_feedback:
-            query = self._rocchio_expand(query, eligible_docs, alpha=0.5)
+            query = self.rocchio_expand(query, eligible_docs, alpha=0.5)
             logger.debug(f"Query vector size after Rocchio expansion: {len(query.get_tokens())}")
 
         refined_eligible_docs = self.get_eligible_docs(query)
@@ -159,24 +130,6 @@ class SearchEngine:
         :return: an unordered set of document IDs that are eligible for the given query
         """
         working_set = set()
-        # guaranteed to return something
-
-        # for groups containing a phrase, the scope is iteratively reduced to
-        # documents that contain the phrase only
-        #first_pass = True
-
-        # for group_index, group in enumerate(query.get_token_groups()):
-        #     logger.debug(f"Group {group_index}: {group}")
-
-        #     doc_with_any_member = set(itertools.chain.from_iterable(
-        #         self.get_docs_containing_member(member) for member in group.members))
-        #     if first_pass:
-        #         working_set = doc_with_any_member
-        #         first_pass = False
-        #     else:
-        #         working_set &= doc_with_any_member
-
-        # logger.debug(f"Working set size: {len(working_set)}")
 
         # For each token in the members of the query, as long as the document contains any of the tokens,
         # it is considered eligible
@@ -199,7 +152,8 @@ class SearchEngine:
                                                    k_count=k_count,
                                                    with_scores=True,
                                                     use_tfidf=use_tfidf)
-        return scored_documents
+        # Return only documents with score > 0.2
+        return [(doc_id, score) for doc_id, score in scored_documents if score > 0.2]
 
     def get_docs_containing_member(self, member):
         """
@@ -223,6 +177,16 @@ class SearchEngine:
             matched_docs = [doc.get_document_id()
                             for doc in self._term_dictionary.get_term_posting(tokens[0])]
         return set(matched_docs)
+    
+    def get_text(self, doc_id):
+        """
+        Get the text of the document with the given document ID.
+
+        :param str doc_id: the document ID
+        :return: the text of the document
+        """
+        print(f"Getting text for doc_id: {str(doc_id)}")
+        return self._corpus[self._corpus['unique_id'] == str(doc_id)]['string'].values[0]
 
     def _expand_query(self, query: Query, relevant_docs=None):
         """
@@ -263,7 +227,7 @@ class SearchEngine:
         logger.debug(f"Expanded query: {expanded_query}")
         return expanded_query
 
-    def _rocchio_expand(self, query: Query, initial_documents, alpha=0.5, beta=0.3):
+    def rocchio_expand(self, query: Query, initial_documents, alpha=0.5, beta=0.3, gamma=0.2, noun_scaling=1.2, return_labels=False):
         """
         Expand the initial query using the rocchio formula using the set of initial documents.
 
@@ -278,8 +242,6 @@ class SearchEngine:
         :return:
         """
         initial_documents = [str(doc_id) for doc_id in initial_documents]
-        # The weight given to the irrelevant documents
-        gamma = 1 - alpha - beta
 
         documents = []
         # Format the query and documents into (id, string)
@@ -287,6 +249,7 @@ class SearchEngine:
         documents.append(('query', query_string))
 
         for doc_id in initial_documents:
+            print(f"Getting text for Doc ID: {doc_id}")
             documents.append((doc_id, self._corpus[self._corpus['unique_id'] == doc_id]['string'].values[0]))
         
         print(documents)
@@ -311,44 +274,122 @@ class SearchEngine:
         for doc_id in irrelevant_documents:
             print(f"Irrelevant doc: {doc_id}, Label: {id_label_map[doc_id]}")
 
-        relevant_centroid = get_centroid(relevant_documents, self._document_summary_dictionary)
+        # Get the nouns/proper nouns from the query string
+        query_nlp = nlp(query_string)
+        query_nouns = set(word.text.lower() for word in query_nlp if word.pos_ in ['NOUN', 'PROPN'])
 
-        irrelevant_centroid = get_centroid(irrelevant_documents, self._document_summary_dictionary)
+        relevant_centroid = self.get_centroid(relevant_documents, query_nouns, for_relevant=True, noun_scaling=noun_scaling)
+        irrelevant_centroid = self.get_centroid(irrelevant_documents, query_nouns, for_relevant=False, noun_scaling=noun_scaling)
 
         token_weight = {}
 
         for term in query.get_tokens():
             token_weight.setdefault(term, 0)
-            token_weight[term] += alpha * query.get_token_weight(term)
+            token_weight[term] += alpha * (query.get_token_weight(term) / len(query.get_tokens()))
 
         for term in relevant_centroid:
             token_weight.setdefault(term, 0)
             token_weight[term] += beta * (relevant_centroid[term] / len(relevant_documents))
 
-        # Get the nouns/proper nouns from the query string
-        query_nlp = nlp(query_string)
-        nouns = [word.text for word in query_nlp if word.pos_ in ['NOUN', 'PROPN']]
-
-        selected_relevant_doc_nouns = set()
-        # For each irrelevant document
-        for doc_id in irrelevant_documents:
-            # Get the document string
-            doc_string = self._corpus[self._corpus['unique_id'] == doc_id]['string'].values[0]
-            # Get the nouns/proper nouns from the document string
-            doc_nlp = nlp(doc_string)
-            doc_nouns = [word.text for word in doc_nlp if word.pos_ in ['NOUN', 'PROPN']]
-
-            for noun in nouns:
-                for doc_noun in doc_nouns:
-                    sim = calculate_similarity(noun, doc_noun)
-                    if sim > 0.3:
-                        selected_relevant_doc_nouns.add(stem(doc_noun))
 
         for term in irrelevant_centroid:
             token_weight.setdefault(term, 0)
-            if term in selected_relevant_doc_nouns:
-                token_weight[term] += gamma * (irrelevant_centroid[term] / len(irrelevant_documents))
-            else:
-                token_weight[term] -= gamma * (irrelevant_centroid[term] / len(irrelevant_documents))
+            token_weight[term] -= gamma * (irrelevant_centroid[term] / len(irrelevant_documents))
 
-        return Query(query_string, token_weight, query.get_token_groups())
+        print("New token weights", token_weight)
+
+        new_query = Query(query_string, token_weight, query.get_token_groups())
+
+        if return_labels:
+            return new_query, id_label_map
+        else:
+            return new_query
+    
+    def get_centroid(self, documents, query_nouns, for_relevant, noun_scaling=1.5):
+        """
+        Get the centroid of the documents
+
+        :param set[int] documents: the set of documents
+        :param DocumentSummaryDictionary document_summary_dictionary: the document summary dictionary
+        :param set[str] query_nouns: the set of query nouns
+        :param bool for_relevance: whether the centroid is for relevance or irrelevance
+        :return: the centroid of the documents
+        """
+        centroid = {}
+        for doc_id in documents:
+            if doc_id not in self._document_summary_dictionary:
+                logger.error(f"Document ID {doc_id} not found in document summary dictionary")
+                continue
+
+            summary: DocumentSummary = self._document_summary_dictionary[doc_id]
+
+            doc_string = self._corpus[self._corpus['unique_id'] == doc_id]['string'].values[0]
+
+            doc_nlp = nlp(doc_string)
+            doc_nouns = set(word.text.lower() for word in doc_nlp if word.pos_ in ['NOUN', 'PROPN'])
+            accounted_terms = set()
+
+            for noun in doc_nouns:
+                use_path_sim = False
+                # Computer similarity between the noun and the query noun
+                if noun not in self._word2vec.wv:
+                    use_path_sim = True
+                
+                has_similar = False
+                for query_noun in query_nouns:
+
+                    if query_noun not in self._word2vec.wv:
+                        use_path_sim = True
+                    
+                    if use_path_sim:
+                        # Use path similarity
+                        query_synsets = wn.synsets(query_noun)
+                        noun_synsets = wn.synsets(noun)
+                        max_sim = 0
+                        for query_synset, noun_synset in itertools.product(query_synsets, noun_synsets):
+                            sim = query_synset.path_similarity(noun_synset)
+                            if sim is not None and sim > max_sim:
+                                max_sim = sim
+                        sim = max_sim
+                    else:
+                        # Use word2vec similarity
+                        sim = self._word2vec.wv.similarity(query_noun, noun)
+
+                    if sim > 0.75:
+                        stemmed_noun = stem(noun)
+                        accounted_terms.add(stemmed_noun)
+                        centroid.setdefault(stemmed_noun, 0)
+                        if for_relevant:
+                            # In the relevant scenario (beta), we want to reward similar nouns
+                            centroid[stemmed_noun] += summary.get_term_frequency(stemmed_noun) * noun_scaling
+                        else:
+                            # In the irrelevant scenario (gamma), a negative multiplier is applied
+                            # Effectively, we will be rewarding similar nouns after the multiplication
+                            centroid[stemmed_noun] -= summary.get_term_frequency(stemmed_noun) * noun_scaling
+                        has_similar = True
+                        break
+                
+                if not has_similar:
+                    stemmed_noun = stem(noun)
+                    accounted_terms.add(stemmed_noun)
+                    centroid.setdefault(stemmed_noun, 0)
+                    if for_relevant:
+                        # In the relevant scenario (beta), we penalize dissimilar nouns
+                        centroid[stemmed_noun] -= summary.get_term_frequency(stemmed_noun) * noun_scaling
+                    else:
+                        # In the irrelevant scenario (gamma), a negative multiplier is applied
+                        # Effectively, we will be penalizing dissimilar nouns after the multiplication
+                        centroid[stemmed_noun] += summary.get_term_frequency(stemmed_noun) * noun_scaling
+
+            for term in summary.get_unique_terms():
+                if term in accounted_terms:
+                    # Skip the nouns cos we've already added them
+                    continue
+
+                centroid.setdefault(term, 0)
+                # In the relevant scenario (beta), we want to reward the terms (contributing to label)
+                # In the irrelevant scenario (gamma), a negative multiplier is applied, we are
+                # hence penalizing the terms that contribute to the label
+                centroid[term] += summary.get_term_frequency(term)
+
+        return centroid

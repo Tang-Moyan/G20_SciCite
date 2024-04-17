@@ -130,6 +130,8 @@ class DocumentScorer:
         scores: dict[str, DocumentScorer.DocumentScore] = {}
         # scores contains all the documents with at least one term in the query <= document pool size
 
+        query_mag = 0.0
+
         for term in query.get_tokens():
             frequency = query.get_token_weight(term)
 
@@ -144,6 +146,8 @@ class DocumentScorer:
                 continue
                 
             weighted_query_term_frequency = (1 + log(frequency, 10)) * log(total_document_count / document_frequency, 10) if use_tfidf else frequency
+
+            query_mag += weighted_query_term_frequency ** 2
 
             document_postings_iterator = document_postings.to_iterator()
 
@@ -162,9 +166,11 @@ class DocumentScorer:
                 scores[doc_id].add_positional_posting(doc_posting.get_positional_indices())
                 scores[doc_id].score += additional_score
 
+        query_mag **= 0.5
+
         for document_id, score in scores.items():
             magnitude = self._magnitudes[str(document_id)]
-            score.score = 0 if magnitude == 0 else score.score / magnitude
+            score.score = 0 if magnitude == 0 else score.score / (magnitude * query_mag)
 
         if k_count is not None:
             # initialize a max heap
@@ -179,7 +185,7 @@ class DocumentScorer:
                                reverse=True)
 
         if with_scores:
-            return list(x for x in k_largest if x[0] != 0)
+            return list(reversed(x) for x in k_largest if x[0] != 0)
         else:
             return list(x[1] for x in k_largest if x[0] != 0)
 

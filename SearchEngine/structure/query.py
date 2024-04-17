@@ -124,7 +124,6 @@ class Query:
 
         :rtype: list[str]
         """
-        print("Token weights", self._token_weight)
         return list(self._token_weight.keys())
 
     def get_token_groups(self):

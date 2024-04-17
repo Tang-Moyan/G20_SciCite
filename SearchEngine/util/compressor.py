@@ -1,6 +1,6 @@
-import pickle
 import bz2
 import random
+import pickle
 
 
 def loads(bytestream):

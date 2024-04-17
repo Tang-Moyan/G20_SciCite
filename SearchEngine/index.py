@@ -32,7 +32,7 @@ and the final index, after the merge process.
 '''
 DOCUMENT_EXISTENCE_MARKER = ""
 DOCUMENT_SUMMARY_FILENAME = "document_summaries.txt"
-SUBPROCESS_COUNT = cpu_count()
+SUBPROCESS_COUNT = cpu_count() - 2
 BATCH_COUNT = 4
 
 

@@ -2,7 +2,7 @@ from allennlp.models.archival import load_archive
 from allennlp.predictors import Predictor
 from allennlp.common.util import import_submodules
 
-class Local_Predictor():
+class LocalPredictor():
     def __init__(self, model_dir="../scicite-pretrained.tar.gz", predictor_type="predictor_scicite",include_package="scicite", overrides=""):
         import_submodules(include_package)
         self.model_archive = load_archive(model_dir, overrides=overrides)
@@ -28,9 +28,9 @@ class Local_Predictor():
 def main():
     input_text = "However, how frataxin interacts with the Fe-S cluster biosynthesis components remains unclear as direct one-to-one interactions with each component were reported (IscS [12,22], IscU/Isu1 [6,11,16] or ISD11/Isd11 [14,15])."
 
-
-    a = Local_Predictor()
-    print(a.predict(input_text))
+    
+    a = LocalPredictor("./data/scicite-pretrained.tar.gz")
+    print(f"Prediction: {a.predict(input_text)}")
 
 if __name__ == "__main__":
     main()

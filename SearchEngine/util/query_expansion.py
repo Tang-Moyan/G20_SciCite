@@ -42,20 +42,25 @@ def generate_synonyms(term):
     native_synonyms = {synonym.replace("_", " ") for synonym in synonyms.get(term, default=[term])}
 
     default_synonyms = set(
-        str(lemma.name()).replace("_", " ").lower()  # convert the synonym into a phrase
+        str(lemma.name()).lower()  # get the name of the synonym
         for s in wn.synsets(term)  # get the synsets for the term
         for lemma in itertools.chain(s.lemmas(),  # chain the derived forms (eg, silence -> silent)
                                      *map(lambda l: l.derivationally_related_forms(), s.lemmas()),
                                      *map(lambda l: l.also_sees(), s.lemmas()),
                                      *map(lambda l: l.similar_tos(), s.lemmas()))
+        if "_" not in str(lemma.name())  # exclude synonyms that are phrases
     ) | native_synonyms
 
-    if "_" in term:
-        # if term is a phrase, permute the synonyms of each word in the phrase
-        return set(
-            " ".join(perm)  # convert the permutation into a phrase
-            for perm in itertools.product(*[synonyms.get(word, default=[word])
-                                            for word in term.split("_")])
-        ) | default_synonyms
-    else:
-        return default_synonyms
+    return default_synonyms
+
+    # if "_" in term:
+    #     # Discard
+    #     return default_synonyms
+    #     # if term is a phrase, permute the synonyms of each word in the phrase
+    #     # return set(
+    #     #     " ".join(perm)  # convert the permutation into a phrase
+    #     #     for perm in itertools.product(*[synonyms.get(word, default=[word])
+    #     #                                     for word in term.split("_")])
+    #     # ) | default_synonyms
+    # else:
+    #     return default_synonyms

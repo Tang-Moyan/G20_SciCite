@@ -40,7 +40,7 @@ def run_search(dict_file, postings_file, query_string, corpus_file_jsonl):
     # logger.info(f"Relevant docs received: {relevant_docs}")
     try:
         # before submission, set k_count to None
-        top_list = search_engine.submit_query(query=query,
+        top_list = search_engine.submit_query_with_options(query=query,
                                             k_count=10,
                                             relevant_docs=None,
                                             query_expansion=False,
