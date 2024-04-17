@@ -29,7 +29,7 @@ def main():
     input_text = "However, how frataxin interacts with the Fe-S cluster biosynthesis components remains unclear as direct one-to-one interactions with each component were reported (IscS [12,22], IscU/Isu1 [6,11,16] or ISD11/Isd11 [14,15])."
 
     
-    a = LocalPredictor("./data/scicite-pretrained.tar.gz")
+    a = LocalPredictor("./data/scicite.tar.gz")
     print(f"Prediction: {a.predict(input_text)}")
 
 if __name__ == "__main__":
