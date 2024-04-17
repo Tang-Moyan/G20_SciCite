@@ -167,3 +167,4 @@ cython_debug/
 /Varied/glove.42B.300d.npy
 
 data/scicite-pretrained.tar.gz
+data/scicite.tar.gz

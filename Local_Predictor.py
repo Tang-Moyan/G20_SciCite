@@ -3,7 +3,7 @@ from allennlp.predictors import Predictor
 from allennlp.common.util import import_submodules
 
 class LocalPredictor():
-    def __init__(self, model_dir="../scicite-pretrained.tar.gz", predictor_type="predictor_scicite",include_package="scicite", overrides=""):
+    def __init__(self, model_dir="../scicite.tar.gz", predictor_type="predictor_scicite",include_package="scicite", overrides=""):
         import_submodules(include_package)
         self.model_archive = load_archive(model_dir, overrides=overrides)
 
