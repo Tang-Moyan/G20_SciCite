@@ -41,6 +41,7 @@ cd Varied
 conda create --name 4248 python=3.8
 conda activate 4248
 pip install -r requirements.txt
+pip install en-core-web-sm
 ```
 
 ### Step4:
