@@ -13,13 +13,13 @@ For details on the model and data refer to our NAACL 2019 paper:
 
 ### Step 1:
 Download pretrained weight(i.e.,Glove):
-```json
+```bash
 We have transformed the word embedding to .npy file so you don't have to do the converting process:
 Download the pretrained weight from:
 https://drive.google.com/drive/folders/18aQPJ19csIo1f7d64ulTaiHft5e8mHQN?usp=drive_link
 ```
 Put it at the 'Varied' directory as such strcture:
-```json
+```bash
 Varied\glove.42B.300d.npy
 Varied\glove_vocab.pkl
 ```
@@ -33,7 +33,7 @@ https://developer.nvidia.com/cuda-toolkit
 
 ### Step3:
 Run the following command
-```json
+```bash
 git clone https://github.com/Tang-Moyan/G20_SciCite.git
 cd Varied
 conda create --name 4248 python=3.8
@@ -42,7 +42,7 @@ pip install -r requirements.txt
 ```
 
 ### Step4:
-```json
+```bash
 python train.py
 ```
 ### OR
