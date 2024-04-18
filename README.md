@@ -16,7 +16,7 @@ Download pretrained weight(i.e.,Glove):
 
 We have transformed the word embedding to .npy file so you don't have to do the converting process:
 Download the pretrained weight from:
-```bash
+```
 https://drive.google.com/drive/folders/18aQPJ19csIo1f7d64ulTaiHft5e8mHQN?usp=drive_link
 ```
 Put it at the 'Varied' directory as such strcture:
