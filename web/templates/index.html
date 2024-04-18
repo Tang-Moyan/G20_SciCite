@@ -1,0 +1,263 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <!-- Required meta tags -->
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-EVSTQN3/azprG1Anm3QDgpJLIm9Nao0Yz1ztcQTwFspd3yD65VohhpuuCOmLASjC" crossorigin="anonymous">
+
+    <!-- Stylesheet -->
+    <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='main.css') }}">
+
+    {{ fontawesome_html() }}
+
+    <title>CLARA</title>
+</head>
+<body>
+    <header class="header">
+        <nav class="navbar navbar-expand-lg navbar-light bg-light">
+            <div class="container-fluid">
+                <a class="navbar-brand" href="#">CLARA</a>
+                <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+                    <span class="navbar-toggler-icon"></span>
+                </button>
+                <div class="collapse navbar-collapse" id="navbarNav">
+                    <ul class="navbar-nav">
+                        <li class="nav-item">
+                            <a class="nav-link active" aria-current="page" href="#">
+                                Home
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="https://github.com/Tang-Moyan/G20_SciCite">
+                                GitHub
+                            </a>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+        </nav>
+    </header>    
+
+    <!-- Make a short description -->
+    <div class="p-3 mb-5 bg-secondary text-white">
+        <p> This is an interactive demo of the Classification Labelling Assisted Rocchio Algorithm. It performs a vector space model search on a dataset of documents and returns a refined ranking of relevant documents based on the user's query using a modified Rocchio Algorithm operated on Natural Language Processing and Machine Learning techniques. </p>
+    </div>
+
+    <!-- Make a search bar -->
+    <div class="container">
+        <!-- Center the search bar horizontally but not vertically -->
+        <div class="d-flex justify-content-center">
+            <div class="search">
+                <input id="searchInput" class="search_input" type="text" name="" placeholder="Search here...">
+                <button id="searchButton" class="search_icon"><i class="fa fa-search"></i></button>
+            </div>
+        </div>
+    </div>
+
+
+    <div id="queryLabel" class="container justify-content-center align-items-center flex-column mt-5">
+        <!-- Query label will be printed here -->
+    </div>
+
+    <!-- Print response here -->
+    <div id="response" class="container justify-content-center align-items-center flex-column mt-5">
+        <!-- Response will be printed here -->
+    </div> 
+
+    <div id="rocchio-response" class="container justify-content-center align-items-center flex-column mt-5 mb-5">
+        <!-- Response will be printed here -->
+    </div>    
+
+    <!-- Option 1: Bootstrap Bundle with Popper -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/js/bootstrap.bundle.min.js" integrity="sha384-MrcW6ZMFYlzcLA8Nl+NtUVF0sA7MsXsP1UyJoMp4YLEuNSfAP+JcXn/tWtIaxVXM" crossorigin="anonymous"></script>
+
+    <!-- Your custom JavaScript code -->
+    <script>
+        document.getElementById('searchButton').addEventListener('click', function() {
+            queryLabel = '';
+            document.getElementById('queryLabel').textAlign = 'center';
+            document.getElementById('queryLabel').innerText = '';
+            document.getElementById('response').innerText = 'Please wait...';
+            document.getElementById('rocchio-response').innerText = '';
+
+            var query = document.getElementById('searchInput').value;
+            fetch('/search', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                },
+                body: 'query=' + encodeURIComponent(query)
+            })
+            .then(response => response.json())
+            .then(data => {
+                console.log('Success:', data);
+
+                // Clear the query label
+                queryLabel = data.queryLabel;
+
+                if (queryLabel) {
+                    document.getElementById('queryLabel').innerHTML = `The query is likely to be a <b>${queryLabel}</b> sentence.`;
+                } else {
+                    document.getElementById('queryLabel').innerHTML = 'The query sentence is too short to determine the label. Please try again with a longer sentence.';
+                }
+
+                // Clear the response element
+                document.getElementById('response').innerHTML = '';
+
+                // Construct a table
+                const table = document.createElement('table');
+                table.classList.add('table', 'table-striped', 'table-bordered', 'table-hover');
+                const thead = document.createElement('thead');
+                const tbody = document.createElement('tbody');
+                const theadRow = document.createElement('tr');
+                const theadId = document.createElement('th');
+                theadId.innerText = 'ID';
+                const theadCitation = document.createElement('th');
+                theadCitation.innerText = 'Citation';
+                const theadCosSim = document.createElement('th');
+                theadCosSim.innerText = 'Relational Cosine Similarity';
+                const theadLabel = document.createElement('th');
+                theadLabel.innerText = 'Predicted Label';
+                const theadVerdict = document.createElement('th');
+                theadVerdict.innerText = 'Verdict';
+                theadRow.appendChild(theadId);
+                theadRow.appendChild(theadCitation);
+                theadRow.appendChild(theadCosSim);
+                theadRow.appendChild(theadLabel);
+                theadRow.appendChild(theadVerdict);
+                thead.appendChild(theadRow);
+                table.appendChild(thead);
+
+                data.message.forEach(item => {
+                    const tr = document.createElement('tr');
+                    const tdId = document.createElement('td');
+                    // Give this row the id of the item.id
+                    tr.id = item.id;
+
+                    // For id, split by '>', then for each element, take only the first 2 characters and the last 2 characters and join them with .., then join them back with '>'
+                    tdId.innerText = item.id.split('>').map(e => e.slice(0, 3) + '..' + e.slice(-3)).join('>');
+                    const tdCitation = document.createElement('td');
+                    tdCitation.innerText = item.citation;
+                    const tdScore = document.createElement('td');
+                    tdScore.innerText = item.score.toFixed(4);
+                    const tdLabel = document.createElement('td');
+                    tdLabel.innerText = "Pending prediction...";
+                    const tdVerdict = document.createElement('td');
+                    tdVerdict.innerText = "Pending verdict...";
+                    tr.appendChild(tdId);
+                    tr.appendChild(tdCitation);
+                    tr.appendChild(tdScore);
+                    tr.appendChild(tdLabel);
+                    tr.appendChild(tdVerdict);
+                    tbody.appendChild(tr);
+                });
+
+                table.appendChild(tbody);
+                document.getElementById('response').appendChild(table);
+
+                eligibleDocs = data.message.map(item => item.id);
+
+                // Make the loading animation
+                document.getElementById('rocchio-response').innerText = 'Loading';
+                // Center the loading message
+                document.getElementById('rocchio-response').style.textAlign = 'center';
+            
+                const loadingInterval = setInterval(function() {
+                    const responseElement = document.getElementById('rocchio-response');
+                    responseElement.innerText += '.';
+                    // Reset to 'Loading' if the loading message exceeds 'Loading...'
+                    if (responseElement.innerText.length > 11) {
+                        responseElement.innerText = 'Loading';
+                    }
+                }, 1000); // Update every 1 second
+
+                // Send another request to do rocchio algorithm
+                fetch('/rocchio', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded',
+                    },
+                    body: 'query=' + encodeURIComponent(query) + '&eligibleDocs=' + encodeURIComponent(JSON.stringify(eligibleDocs))
+                })
+                .then(response => response.json())
+                .then(data => {
+                    console.log('Rocchio Success:', data);
+
+                    // Uncenter the loading message
+                    document.getElementById('rocchio-response').style.textAlign = 'left';
+
+                    clearInterval(loadingInterval);
+
+                    document.getElementById('rocchio-response').innerHTML = '';
+
+                    // Construct a table
+                    const table = document.createElement('table');
+                    table.classList.add('table', 'table-striped', 'table-bordered', 'table-hover');
+                    const thead = document.createElement('thead');
+                    const tbody = document.createElement('tbody');
+                    const theadRow = document.createElement('tr');
+                    const theadTh1 = document.createElement('th');
+                    theadTh1.innerText = 'ID';
+                    const theadTh2 = document.createElement('th');
+                    theadTh2.innerText = 'Citation';
+                    const theadTh3 = document.createElement('th');
+                    theadTh3.innerText = 'Relational Cosine Similarity';
+                    const theadTh4 = document.createElement('th');
+                    theadTh4.innerText = 'Predicted Label';
+                    theadRow.appendChild(theadTh1);
+                    theadRow.appendChild(theadTh2);
+                    theadRow.appendChild(theadTh3);
+                    theadRow.appendChild(theadTh4);
+                    thead.appendChild(theadRow);
+                    table.appendChild(thead);
+
+                    data.message.forEach(item => {
+                        const tr = document.createElement('tr');
+                        const td1 = document.createElement('td');
+                        td1.innerText = item.id.split('>').map(e => e.slice(0, 3) + '..' + e.slice(-3)).join('>');
+                        const td2 = document.createElement('td');
+                        td2.innerText = item.citation;
+                        const td3 = document.createElement('td');
+                        td3.innerText = item.score.toFixed(4);
+                        const td4 = document.createElement('td');
+                        td4.innerText = item.label;
+                        tr.appendChild(td1);
+                        tr.appendChild(td2);
+                        tr.appendChild(td3);
+                        tr.appendChild(td4);
+                        tbody.appendChild(tr);
+                    });
+
+                    table.appendChild(tbody);
+                    document.getElementById('rocchio-response').appendChild(table);
+                    
+                    Object.keys(data.previous_predicted_labels).forEach(id => {
+                        const tr = document.getElementById(id);
+                        const tdLabel = tr.querySelector('td:nth-child(4)');
+                        tdLabel.innerText = data.previous_predicted_labels[id];
+                        const tdVerdict = tr.querySelector('td:nth-child(5)');
+                        if (tdLabel.innerText == queryLabel) {
+                            tdVerdict.innerText = 'Relevant';
+                        } else {
+                            tdVerdict.innerText = 'Irrelevant';
+                        }
+                    });
+                })
+                .catch(error => {
+                    clearInterval(loadingInterval);
+                    console.error('Rocchio Error:', error);
+                });
+            })
+            .catch(error => {
+                clearInterval(loadingInterval);
+                console.error('Error:', error);
+            });
+        });
+    </script>
+</body>
+</html>
