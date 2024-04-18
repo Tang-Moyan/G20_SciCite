@@ -5,10 +5,10 @@ import pandas as pd
 import pickle
 from gensim.models import KeyedVectors
 from transformers import BertTokenizer, BertModel
+from gensim.scripts.glove2word2vec import glove2word2vec
 
 
 def glove_to_word2vec(glove_input_file, word2vec_output_file):
-    from gensim.scripts.glove2word2vec import glove2word2vec
     glove2word2vec(glove_input_file, word2vec_output_file)
 
 

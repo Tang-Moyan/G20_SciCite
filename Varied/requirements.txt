@@ -1,7 +1,8 @@
-torch
-scikit-learn
-pandas>=2.2.1
-numpy
-matplotlib
-gensim
-tqdm
+gensim==4.3.2
+matplotlib==3.8.0
+numpy==1.24.4
+pandas==2.0.3
+scikit_learn==1.3.2
+spacy==3.7.4
+tqdm==4.65.0
+transformers==4.37.2

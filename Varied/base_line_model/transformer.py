@@ -95,7 +95,7 @@ class TransformerBlock(nn.Module):
 
 
 class TransformerClassifier(nn.Module):
-    def __init__(self, input_dim, output_dim, d_model=512, num_heads=8, d_ff=2048, num_layers=6, dropout=0.1):
+    def __init__(self, input_dim, output_dim, d_model=512, num_heads=8, d_ff=2048, num_layers=4, dropout=0.1):
         super(TransformerClassifier, self).__init__()
         self.embedding = nn.Embedding(input_dim, d_model)
         self.positional_encoding = PositionalEncoding(d_model)
