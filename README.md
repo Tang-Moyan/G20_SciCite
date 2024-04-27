@@ -1,6 +1,6 @@
 # <p align=center>`SciCite`</p> 
 
-# Quickstart
+## Quickstart
 
 The entry point is the `web` folder.
 
@@ -20,6 +20,7 @@ Click into this local address and a browser page will open. You may search for d
 
 ![image](https://github.com/Tang-Moyan/G20_SciCite/assets/15359033/5d8b1ed2-f152-4a57-9c3a-b215a5f752b4)
 
+On the webpage, the first table shows the retrieved citations via basic cosine similarity using log tf-idf. The second table shows the refined retrieval of citations after CLARA is performed.
 
 ## Training
 
