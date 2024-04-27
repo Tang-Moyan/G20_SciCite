@@ -4,7 +4,7 @@
 
 The entry point is the `web` folder.
 
-CLARA in the current state uses AllenNLP's prediction model. Thus, the setup requires Python 3.6 and allennlp v0.8. Refer to [Part 2 (Set Up Tutorial)](setup-tutorial) to set up AllenNLP in its own state.
+CLARA in the current state uses AllenNLP's prediction model. Thus, the setup requires Python 3.6 and allennlp v0.8. Refer to [Part 2 (Set Up Tutorial)](#setup-tutorial) to set up AllenNLP in its own state.
 
 It is important to notes the module versions that must be installed to prevent stray errors, as this allennlp is very old and several of its dependencies rely on much older modules.
 
