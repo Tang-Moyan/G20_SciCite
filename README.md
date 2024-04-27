@@ -6,7 +6,7 @@ The entry point is the `web` folder.
 
 CLARA in the current state uses AllenNLP's prediction model. Thus, the setup requires Python 3.6 and allennlp v0.8. Refer to [Part 2 (Set Up Tutorial)](#setup-tutorial) to set up AllenNLP in its own state.
 
-It is important to notes the module versions that must be installed to prevent stray errors, as this allennlp is very old and several of its dependencies rely on much older modules.
+It is important to notes the module versions that must be installed to prevent stray errors. This version of allennlp is very outdated and several of its dependencies rely on much older modules.
 
 You must download the [SciCite pretrained model](https://s3-us-west-2.amazonaws.com/ai2-s2-research/scicite/models/scicite.tar.gz), as CLARA requires the model to perform reranking after classification.
 
