@@ -1,10 +1,24 @@
 # <p align=center>`SciCite`</p> 
 
-[![PWC](https://img.shields.io/endpoint.svg?url=https://paperswithcode.com/badge/structural-scaffolds-for-citation-intent/citation-intent-classification-acl-arc)](https://paperswithcode.com/sota/citation-intent-classification-acl-arc?p=structural-scaffolds-for-citation-intent) [![PWC](https://img.shields.io/endpoint.svg?url=https://paperswithcode.com/badge/structural-scaffolds-for-citation-intent/sentence-classification-acl-arc)](https://paperswithcode.com/sota/sentence-classification-acl-arc?p=structural-scaffolds-for-citation-intent) [![PWC](https://img.shields.io/endpoint.svg?url=https://paperswithcode.com/badge/structural-scaffolds-for-citation-intent/citation-intent-classification-scicite)](https://paperswithcode.com/sota/citation-intent-classification-scicite?p=structural-scaffolds-for-citation-intent)
+# Quickstart
 
-This repository contains datasets and code for classifying citation intents in academic papers.  
-For details on the model and data refer to our NAACL 2019 paper:
-["Structural Scaffolds for Citation Intent Classification in Scientific Publications"](https://arxiv.org/pdf/1904.01608.pdf).
+The entry point is the `web` folder.
+
+CLARA in the current state uses AllenNLP's prediction model. Thus, the setup requires Python 3.6 and allennlp v0.8. Refer to [Part 2 (Set Up Tutorial)](setup-tutorial) to set up AllenNLP in its own state.
+
+It is important to notes the module versions that must be installed to prevent stray errors, as this allennlp is very old and several of its dependencies rely on much older modules.
+
+You must download the [SciCite pretrained model](https://s3-us-west-2.amazonaws.com/ai2-s2-research/scicite/models/scicite.tar.gz), as CLARA requires the model to perform reranking after classification.
+
+Please save the model as `scicite.tar.gz` under the `G20_SciCite\data` folder. This is the same folder where the `corpus` folder is located.
+
+To run the entire project, start from the G20_SciCite folder `C:\path\to\G20_SciCite\` and run the command `python .\web\app.py`. After the initialization process, taking about 1 minute, a local address should open where you can test the project.
+
+![image](https://github.com/Tang-Moyan/G20_SciCite/assets/15359033/3e2a8eff-a061-4dd8-ac9c-ccdb088d495c)
+
+Click into this local address and a browser page will open. You may search for data using the search box.
+
+![image](https://github.com/Tang-Moyan/G20_SciCite/assets/15359033/5d8b1ed2-f152-4a57-9c3a-b215a5f752b4)
 
 
 ## Training
@@ -14,7 +28,7 @@ For details on the model and data refer to our NAACL 2019 paper:
 ### Step 1:
 Download pretrained weight(i.e.,Glove):
 
-We have transformed the word embedding to .npy file so you don't have to do the converting process.
+We have transformed the word embedding to .npy file so you don't have to do the conversion process.
 
 Download the pretrained weight from:
 ```
@@ -48,16 +62,16 @@ pip install en-core-web-sm
 ```bash
 python train.py
 ```
-### OR
+**OR**
 
-#### Manually run it 
-
-
-#### If you have any difficulty or question running or training the code, please free feel to contact us through hongfei@u.nus.edu
+**Manually run it**
 
 
+**If you have any difficulty or questions running or performing the training process, please free feel to contact hongfei@u.nus.edu**
 
-## Part 2(From the origin repo)
+---
+
+## Part 2 (Using the original AllenNLP version)
 
 ## Setup Tutorial
 
@@ -88,7 +102,7 @@ This will install all the required packages for the project.
 
 Next, install the following important patches to fix stray errors:
 ```
-pip install greenlet==0.4.16 overrides==3.1.0 jsonnetbin
+pip install greenlet==0.4.16 overrides==3.1.0 jsonnetbin gensim==3.6.0 nltk==3.6.3 pandas==1.1.5 portalocker==2.7.0 spacy==2.0.18 Unidecode==1.3.8
 ```
 
 Now, download the pretrained SciCite model from the following link:
@@ -221,6 +235,15 @@ However, if you want to train a new model, you must **empty the entire serializa
 
 ---
 ## Data
+
+(Retrieved from original Scicite Repo)
+
+[![PWC](https://img.shields.io/endpoint.svg?url=https://paperswithcode.com/badge/structural-scaffolds-for-citation-intent/citation-intent-classification-acl-arc)](https://paperswithcode.com/sota/citation-intent-classification-acl-arc?p=structural-scaffolds-for-citation-intent) [![PWC](https://img.shields.io/endpoint.svg?url=https://paperswithcode.com/badge/structural-scaffolds-for-citation-intent/sentence-classification-acl-arc)](https://paperswithcode.com/sota/sentence-classification-acl-arc?p=structural-scaffolds-for-citation-intent) [![PWC](https://img.shields.io/endpoint.svg?url=https://paperswithcode.com/badge/structural-scaffolds-for-citation-intent/citation-intent-classification-scicite)](https://paperswithcode.com/sota/citation-intent-classification-scicite?p=structural-scaffolds-for-citation-intent)
+
+This repository contains datasets and code for classifying citation intents in academic papers.  
+For details on the model and data refer to our NAACL 2019 paper:
+["Structural Scaffolds for Citation Intent Classification in Scientific Publications"](https://arxiv.org/pdf/1904.01608.pdf).
+
 
 We introduce `SciCite` a new large dataset of citation intents. Download from the following link:
 
